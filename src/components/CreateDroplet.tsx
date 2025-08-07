@@ -77,11 +77,14 @@ export function CreateDroplet() {
       // Extract droplet ID from events
       let dropletId = '';
       if (result.events) {
+        console.log('Events:', result.events); // Debug logging
         const createEvent = result.events.find(event => 
-          event.type.includes('DropletCreated')
+          event.type.includes('DropletCreated') || event.type.includes('dropnew::DropletCreated')
         );
+        console.log('Create event found:', createEvent); // Debug logging
         if (createEvent && createEvent.parsedJson) {
           dropletId = (createEvent.parsedJson as any).droplet_id;
+          console.log('Extracted droplet ID:', dropletId); // Debug logging
         }
       }
       

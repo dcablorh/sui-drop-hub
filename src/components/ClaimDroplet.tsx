@@ -49,11 +49,27 @@ export function ClaimDroplet() {
         sender: currentAccount.address,
       });
 
-      if (!inspectResult.results?.[0]?.returnValues?.[0]?.[0]) {
+      // Check if the function returned Some(address) or None
+      const returnValues = inspectResult.results?.[0]?.returnValues;
+      if (!returnValues || returnValues.length === 0) {
         throw new Error('Droplet not found');
       }
 
-      const dropletAddress = `0x${Buffer.from(inspectResult.results[0].returnValues[0][0]).toString('hex')}`;
+      // Parse the Option<address> return value
+      const optionBytes = returnValues[0][0];
+      if (!optionBytes || optionBytes.length === 0) {
+        throw new Error('Droplet not found');
+      }
+
+      // The first byte indicates if it's Some(1) or None(0)
+      const isSome = optionBytes[0] === 1;
+      if (!isSome) {
+        throw new Error('Droplet not found');
+      }
+
+      // Extract the address bytes (skip the first byte which is the option indicator)
+      const addressBytes = optionBytes.slice(1);
+      const dropletAddress = `0x${Buffer.from(addressBytes).toString('hex')}`;
 
       // Create transaction to claim
       const tx = new TransactionBlock();
