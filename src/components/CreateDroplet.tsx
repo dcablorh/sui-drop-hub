@@ -49,7 +49,10 @@ export function CreateDroplet() {
       // Convert amount to mist (SUI smallest unit: 1 SUI = 1e9 mist)
       const amountInMist = Math.floor(amountValue * 1e9);
 
-        tx.moveCall({
+      // Create a coin object for the airdrop amount (not the gas coin)
+      const [coin] = tx.splitCoins(tx.gas, [amountInMist]);
+
+      tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::create_droplet`,
         typeArguments: [COIN_TYPE],
         arguments: [
@@ -58,7 +61,7 @@ export function CreateDroplet() {
           tx.pure(receiverLimitValue),
           tx.pure([expiryHoursValue]),
           tx.pure(formData.message || 'Airdrop from Sui Drop Hub'),
-          tx.gas,
+          coin, // Use the split coin, not tx.gas
           tx.object(CLOCK_ID),
         ],
       });
