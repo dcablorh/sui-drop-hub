@@ -70,12 +70,26 @@ export function CreateDroplet() {
         transactionBlock: tx as any,
         options: {
           showEffects: true,
+          showEvents: true,
         }
       });
+
+      // Extract droplet ID from events
+      let dropletId = '';
+      if (result.events) {
+        const createEvent = result.events.find(event => 
+          event.type.includes('DropletCreated')
+        );
+        if (createEvent && createEvent.parsedJson) {
+          dropletId = (createEvent.parsedJson as any).droplet_id;
+        }
+      }
       
       toast({
         title: "Droplet created successfully!",
-        description: `Transaction: ${result.digest.slice(0, 10)}...`,
+        description: dropletId 
+          ? `Droplet ID: ${dropletId} | Transaction: ${result.digest.slice(0, 10)}...`
+          : `Transaction: ${result.digest.slice(0, 10)}...`,
       });
 
       // Reset form
