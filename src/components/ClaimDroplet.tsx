@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWalletKit } from '@mysten/wallet-kit';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,55 @@ import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID } from '@/lib/suiClient';
 import { Gift, User, Hash } from 'lucide-react';
 
-export function ClaimDroplet() {
+interface ClaimDropletProps {
+  prefilledDropletId?: string;
+}
+
+export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
   const { signAndExecuteTransactionBlock, currentAccount } = useWalletKit();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    dropletId: prefilledDropletId,
+    claimerName: ''
+  });
+  const [formErrors, setFormErrors] = useState({
     dropletId: '',
     claimerName: ''
   });
+
+  // Update form when prefilledDropletId changes
+  useEffect(() => {
+    if (prefilledDropletId) {
+      setFormData(prev => ({ ...prev, dropletId: prefilledDropletId }));
+    }
+  }, [prefilledDropletId]);
+
+  // Validation functions
+  const validateForm = () => {
+    const errors = {
+      dropletId: '',
+      claimerName: ''
+    };
+
+    // Validate droplet ID - exactly 6 uppercase alphanumeric characters
+    const dropletIdRegex = /^[A-Z0-9]{6}$/;
+    if (!formData.dropletId) {
+      errors.dropletId = 'Droplet ID is required';
+    } else if (!dropletIdRegex.test(formData.dropletId)) {
+      errors.dropletId = 'Droplet ID must be exactly 6 uppercase alphanumeric characters';
+    }
+
+    // Validate claimer name - non-empty string with max 50 characters
+    if (!formData.claimerName.trim()) {
+      errors.claimerName = 'Name is required';
+    } else if (formData.claimerName.length > 50) {
+      errors.claimerName = 'Name must be less than 50 characters';
+    }
+
+    setFormErrors(errors);
+    return !Object.values(errors).some(error => error !== '');
+  };
 
   const handleClaim = async () => {
     if (!currentAccount) {
@@ -29,12 +70,17 @@ export function ClaimDroplet() {
       return;
     }
 
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the form errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-
-      if (!formData.dropletId || !formData.claimerName) {
-        throw new Error('Please fill in all required fields');
-      }
 
       // First, get the droplet address by ID
       const inspectResult = await suiClient.devInspectTransactionBlock({
@@ -102,6 +148,10 @@ export function ClaimDroplet() {
         dropletId: '',
         claimerName: ''
       });
+      setFormErrors({
+        dropletId: '',
+        claimerName: ''
+      });
 
     } catch (error: any) {
       let errorMessage = error.message || 'An unknown error occurred';
@@ -154,9 +204,12 @@ export function ClaimDroplet() {
               placeholder="A1B2C3"
               value={formData.dropletId}
               onChange={(e) => setFormData({ ...formData, dropletId: e.target.value.toUpperCase() })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50 font-mono"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 font-mono ${formErrors.dropletId ? 'border-destructive' : ''}`}
               maxLength={6}
             />
+            {formErrors.dropletId && (
+              <p className="text-sm text-destructive mt-1">{formErrors.dropletId}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -167,10 +220,19 @@ export function ClaimDroplet() {
             <Input
               id="claimerName"
               placeholder="Enter your name"
+              maxLength={50}
               value={formData.claimerName}
               onChange={(e) => setFormData({ ...formData, claimerName: e.target.value })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.claimerName ? 'border-destructive' : ''}`}
             />
+            <div className="flex justify-between items-center mt-1">
+              {formErrors.claimerName && (
+                <p className="text-sm text-destructive">{formErrors.claimerName}</p>
+              )}
+              <p className="text-sm text-muted-foreground ml-auto">
+                {formData.claimerName.length}/50
+              </p>
+            </div>
           </div>
         </div>
 

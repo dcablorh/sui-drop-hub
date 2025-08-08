@@ -1,14 +1,34 @@
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
+import { QRScanner } from '@/components/QRScanner';
 import { PlatformStats } from '@/components/PlatformStats';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Send, Gift, TrendingUp, Star, Zap, Shield, Clock } from 'lucide-react';
+import { Send, Gift, TrendingUp, Star, Zap, Shield, Clock, QrCode } from 'lucide-react';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState('create');
+  const [prefilledDropletId, setPrefilledDropletId] = useState('');
+
+  // Check URL parameters for direct claiming
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dropletId = urlParams.get('id');
+    if (dropletId && dropletId.length === 6 && /^[A-Z0-9]{6}$/.test(dropletId.toUpperCase())) {
+      setPrefilledDropletId(dropletId.toUpperCase());
+      setActiveTab('claim');
+    }
+  }, []);
+
+  const handleDropletIdFound = (dropletId: string) => {
+    setPrefilledDropletId(dropletId);
+    setActiveTab('claim');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -58,11 +78,15 @@ const Index = () => {
       {/* Main Content */}
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
-          <Tabs defaultValue="create" className="space-y-8">
-            <TabsList className="grid w-full grid-cols-3 bg-secondary/50 border border-border/50">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            <TabsList className="grid w-full grid-cols-4 bg-secondary/50 border border-border/50">
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Create
+              </TabsTrigger>
+              <TabsTrigger value="search" className="flex items-center gap-2">
+                <QrCode className="h-4 w-4" />
+                Search
               </TabsTrigger>
               <TabsTrigger value="claim" className="flex items-center gap-2">
                 <Gift className="h-4 w-4" />
@@ -80,9 +104,15 @@ const Index = () => {
               </div>
             </TabsContent>
             
+            <TabsContent value="search" className="space-y-0">
+              <div className="flex justify-center">
+                <QRScanner onDropletIdFound={handleDropletIdFound} />
+              </div>
+            </TabsContent>
+            
             <TabsContent value="claim" className="space-y-0">
               <div className="flex justify-center">
-                <ClaimDroplet />
+                <ClaimDroplet prefilledDropletId={prefilledDropletId} />
               </div>
             </TabsContent>
             

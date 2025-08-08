@@ -10,18 +10,65 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID } from '@/lib/suiClient';
-import { Send, Coins, Users, Clock, MessageSquare } from 'lucide-react';
+import { Send, Coins, Users, Clock, MessageSquare, Copy, QrCode, CheckCircle } from 'lucide-react';
+import QRCode from 'react-qr-code';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function CreateDroplet() {
   const { signAndExecuteTransactionBlock, currentAccount } = useWalletKit();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdDropletId, setCreatedDropletId] = useState('');
   const [formData, setFormData] = useState({
     amount: '',
     receiverLimit: '',
     expiryHours: '48',
     message: ''
   });
+  const [formErrors, setFormErrors] = useState({
+    amount: '',
+    receiverLimit: '',
+    expiryHours: '',
+    message: ''
+  });
+
+  // Validation functions
+  const validateForm = () => {
+    const errors = {
+      amount: '',
+      receiverLimit: '',
+      expiryHours: '',
+      message: ''
+    };
+
+    const amountValue = parseFloat(formData.amount);
+    const receiverLimitValue = parseInt(formData.receiverLimit);
+    const expiryHoursValue = parseInt(formData.expiryHours);
+
+    // Validate amount
+    if (!formData.amount || amountValue <= 0) {
+      errors.amount = 'Amount must be greater than 0';
+    }
+
+    // Validate receiver limit
+    if (!formData.receiverLimit || receiverLimitValue < 1 || receiverLimitValue > 100000) {
+      errors.receiverLimit = 'Receiver limit must be between 1 and 100,000';
+    }
+
+    // Validate expiry hours (optional but must be > 0 if provided)
+    if (formData.expiryHours && (isNaN(expiryHoursValue) || expiryHoursValue <= 0)) {
+      errors.expiryHours = 'Expiry hours must be greater than 0';
+    }
+
+    // Validate message length
+    if (formData.message && formData.message.length > 200) {
+      errors.message = 'Message must be less than 200 characters';
+    }
+
+    setFormErrors(errors);
+    return !Object.values(errors).some(error => error !== '');
+  };
 
   const handleCreate = async () => {
     if (!currentAccount) {
@@ -33,16 +80,21 @@ export function CreateDroplet() {
       return;
     }
 
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the form errors before submitting",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
       const amountValue = parseFloat(formData.amount);
       const receiverLimitValue = parseInt(formData.receiverLimit);
       const expiryHoursValue = parseInt(formData.expiryHours);
-
-      if (!amountValue || !receiverLimitValue) {
-        throw new Error('Please fill in all required fields');
-      }
 
       const tx = new TransactionBlock();
       
@@ -88,18 +140,27 @@ export function CreateDroplet() {
         }
       }
       
-      toast({
-        title: "Droplet created successfully!",
-        description: dropletId 
-          ? `Droplet ID: ${dropletId} | Transaction: ${result.digest.slice(0, 10)}...`
-          : `Transaction: ${result.digest.slice(0, 10)}...`,
-      });
+      if (dropletId) {
+        setCreatedDropletId(dropletId);
+        setShowSuccess(true);
+      } else {
+        toast({
+          title: "Droplet created successfully!",
+          description: `Transaction: ${result.digest.slice(0, 10)}...`,
+        });
+      }
 
       // Reset form
       setFormData({
         amount: '',
         receiverLimit: '',
         expiryHours: '48',
+        message: ''
+      });
+      setFormErrors({
+        amount: '',
+        receiverLimit: '',
+        expiryHours: '',
         message: ''
       });
 
@@ -111,6 +172,22 @@ export function CreateDroplet() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Droplet ID copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard",
+        variant: "destructive"
+      });
     }
   };
 
@@ -145,8 +222,11 @@ export function CreateDroplet() {
               placeholder="10.0"
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.amount ? 'border-destructive' : ''}`}
             />
+            {formErrors.amount && (
+              <p className="text-sm text-destructive mt-1">{formErrors.amount}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -158,10 +238,15 @@ export function CreateDroplet() {
               id="receiverLimit"
               type="number"
               placeholder="100"
+              min="1"
+              max="100000"
               value={formData.receiverLimit}
               onChange={(e) => setFormData({ ...formData, receiverLimit: e.target.value })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.receiverLimit ? 'border-destructive' : ''}`}
             />
+            {formErrors.receiverLimit && (
+              <p className="text-sm text-destructive mt-1">{formErrors.receiverLimit}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -172,10 +257,14 @@ export function CreateDroplet() {
             <Input
               id="expiryHours"
               type="number"
+              min="1"
               value={formData.expiryHours}
               onChange={(e) => setFormData({ ...formData, expiryHours: e.target.value })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.expiryHours ? 'border-destructive' : ''}`}
             />
+            {formErrors.expiryHours && (
+              <p className="text-sm text-destructive mt-1">{formErrors.expiryHours}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -186,10 +275,19 @@ export function CreateDroplet() {
             <Textarea
               id="message"
               placeholder="Welcome to our community airdrop!"
+              maxLength={200}
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              className="bg-secondary/50 border-border/50 focus:border-primary/50 min-h-20"
+              className={`bg-secondary/50 border-border/50 focus:border-primary/50 min-h-20 ${formErrors.message ? 'border-destructive' : ''}`}
             />
+            <div className="flex justify-between items-center mt-1">
+              {formErrors.message && (
+                <p className="text-sm text-destructive">{formErrors.message}</p>
+              )}
+              <p className="text-sm text-muted-foreground ml-auto">
+                {formData.message.length}/200
+              </p>
+            </div>
           </div>
         </div>
 
@@ -227,6 +325,67 @@ export function CreateDroplet() {
           {loading ? 'Creating...' : 'Create Airdrop'}
         </Button>
       </CardContent>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              Droplet Created Successfully!
+            </DialogTitle>
+            <DialogDescription>
+              Your airdrop droplet has been created. Share the ID below with your community.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Droplet ID Display */}
+            <div className="flex items-center justify-center p-4 bg-secondary/30 rounded-lg">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">Droplet ID</p>
+                <p className="text-2xl font-mono font-bold tracking-wider text-primary">
+                  {createdDropletId}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => copyToClipboard(createdDropletId)}
+                variant="outline"
+                className="flex-1"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy ID
+              </Button>
+              <Button
+                onClick={() => copyToClipboard(`${window.location.origin}/claim?id=${createdDropletId}`)}
+                variant="outline"
+                className="flex-1"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Link
+              </Button>
+            </div>
+
+            {/* QR Code */}
+            <div className="flex justify-center p-4 bg-white rounded-lg">
+              <QRCode
+                value={`${window.location.origin}/claim?id=${createdDropletId}`}
+                size={128}
+                bgColor="#ffffff"
+                fgColor="#000000"
+              />
+            </div>
+            
+            <p className="text-xs text-muted-foreground text-center">
+              Scan this QR code to share the claim link
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </GradientCard>
   );
 }
