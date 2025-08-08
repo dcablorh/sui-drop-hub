@@ -4,11 +4,13 @@ import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
 import { QRScanner } from '@/components/QRScanner';
 import { PlatformStats } from '@/components/PlatformStats';
+import { UserDashboard } from '@/components/UserDashboard';
+import { AdminDashboard } from '@/components/AdminDashboard';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Send, Gift, TrendingUp, Star, Zap, Shield, Clock, QrCode } from 'lucide-react';
+import { Send, Gift, TrendingUp, Star, Zap, Shield, Clock, QrCode, User, Settings } from 'lucide-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('create');
@@ -79,7 +81,7 @@ const Index = () => {
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className="grid w-full grid-cols-4 bg-secondary/50 border border-border/50">
+            <TabsList className="grid w-full grid-cols-6 bg-secondary/50 border border-border/50">
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Create
@@ -92,9 +94,17 @@ const Index = () => {
                 <Gift className="h-4 w-4" />
                 Claim
               </TabsTrigger>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
               <TabsTrigger value="stats" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Stats
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Admin
               </TabsTrigger>
             </TabsList>
             
@@ -116,9 +126,21 @@ const Index = () => {
               </div>
             </TabsContent>
             
+            <TabsContent value="dashboard" className="space-y-0">
+              <div className="flex justify-center">
+                <UserDashboard />
+              </div>
+            </TabsContent>
+            
             <TabsContent value="stats" className="space-y-0">
               <div className="max-w-2xl mx-auto">
                 <PlatformStats />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="admin" className="space-y-0">
+              <div className="flex justify-center">
+                <AdminDashboard />
               </div>
             </TabsContent>
           </Tabs>

@@ -31,8 +31,11 @@ export function PlatformStats() {
         });
 
         if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 2) {
-          const totalDroplets = parseInt(Buffer.from(result.results[0].returnValues[0][0]).toString());
-          const feePercentage = parseInt(Buffer.from(result.results[0].returnValues[1][0]).toString());
+          // Parse as little-endian bytes
+          const totalDroplets = result.results[0].returnValues[0][0].reduce((acc: number, byte: number, index: number) => 
+            acc + (byte << (8 * index)), 0);
+          const feePercentage = result.results[0].returnValues[1][0].reduce((acc: number, byte: number, index: number) => 
+            acc + (byte << (8 * index)), 0);
           
           setStats({
             totalDroplets,
