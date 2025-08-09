@@ -18,6 +18,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useSuiEvents } from '@/hooks/useSuiEvents';
 
 interface DropletDetailsProps {
   dropletId: string;
@@ -171,6 +172,11 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
       setLoading(false);
     }
   };
+
+  // Live refresh on-chain events
+  useSuiEvents(() => {
+    fetchDropletInfo();
+  });
 
   const updateCountdown = () => {
     if (!dropletInfo) return;

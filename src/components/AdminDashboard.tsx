@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { PlatformStats } from './PlatformStats';
+import { useSuiEvents } from '@/hooks/useSuiEvents';
 
 const ADMIN_ADDRESS = '0xe2bf986ccb385f8e5d9500ce8332b69a5cee19579152c240c09213e80e9355b8';
 

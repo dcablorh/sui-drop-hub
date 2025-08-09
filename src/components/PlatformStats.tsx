@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
 import { TrendingUp, Package, Percent, Zap } from 'lucide-react';
+import { useSuiEvents } from '@/hooks/useSuiEvents';
 
 interface PlatformStatsData {
   totalDroplets: number;
@@ -15,46 +16,49 @@ export function PlatformStats() {
   const [stats, setStats] = useState<PlatformStatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const result = await suiClient.devInspectTransactionBlock({
-          transactionBlock: (() => {
-            const tx = new TransactionBlock();
-            tx.moveCall({
-              target: `${PACKAGE_ID}::${MODULE}::get_platform_stats`,
-              arguments: [tx.object(REGISTRY_ID)],
-            });
-            return tx;
-          })(),
-          sender: '0x0000000000000000000000000000000000000000000000000000000000000000',
-        });
-
-        if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 2) {
-          // Parse as little-endian bytes
-          const totalDroplets = result.results[0].returnValues[0][0].reduce((acc: number, byte: number, index: number) => 
-            acc + (byte << (8 * index)), 0);
-          const feePercentage = result.results[0].returnValues[1][0].reduce((acc: number, byte: number, index: number) => 
-            acc + (byte << (8 * index)), 0);
-          
-          setStats({
-            totalDroplets,
-            feePercentage
+  const fetchStats = useCallback(async () => {
+    try {
+      const result = await suiClient.devInspectTransactionBlock({
+        transactionBlock: (() => {
+          const tx = new TransactionBlock();
+          tx.moveCall({
+            target: `${PACKAGE_ID}::${MODULE}::get_platform_stats`,
+            arguments: [tx.object(REGISTRY_ID)],
           });
-        }
-      } catch (error) {
-        console.error('Failed to fetch platform stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          return tx;
+        })(),
+        sender: '0x0000000000000000000000000000000000000000000000000000000000000000',
+      });
 
+      if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 2) {
+        // Parse as little-endian bytes
+        const totalDroplets = result.results[0].returnValues[0][0].reduce((acc: number, byte: number, index: number) => 
+          acc + (byte << (8 * index)), 0);
+        const feePercentage = result.results[0].returnValues[1][0].reduce((acc: number, byte: number, index: number) => 
+          acc + (byte << (8 * index)), 0);
+        
+        setStats({
+          totalDroplets,
+          feePercentage
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch platform stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchStats();
-    
-    // Refresh stats every 30 seconds
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStats]);
+
+  // Live refresh on new on-chain events
+  useSuiEvents(() => {
+    fetchStats();
+  });
 
   if (loading) {
     return (
