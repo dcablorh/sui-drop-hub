@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { DropletDetails } from './DropletDetails';
 import { useToast } from '@/hooks/use-toast';
+import { useSuiEvents } from '@/hooks/useSuiEvents';
 
 type FilterType = 'all' | 'active' | 'expired' | 'completed';
 
@@ -98,6 +99,13 @@ export function UserDashboard() {
       setLoading(false);
     }
   };
+
+  // Live refresh on-chain events
+  useSuiEvents(() => {
+    if (isConnected && currentAccount) {
+      fetchUserHistory();
+    }
+  });
 
   const parseDropletIds = (bytes: number[]): string[] => {
     // Parse vector of strings from Move bytes

@@ -135,12 +135,26 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         transactionBlock: tx as any,
         options: {
           showEffects: true,
+          showEvents: true,
         }
       });
+
+      // Extract message from claim event if available
+      let claimMessage = '';
+      if (transactionResult.events) {
+        const claimEvent = transactionResult.events.find(event => 
+          event.type.includes('DropletClaimed')
+        );
+        if (claimEvent && claimEvent.parsedJson) {
+          claimMessage = (claimEvent.parsedJson as any).message || '';
+        }
+      }
       
       toast({
         title: "Successfully claimed!",
-        description: `Transaction: ${transactionResult.digest.slice(0, 10)}...`,
+        description: claimMessage 
+          ? `"${claimMessage}" • Transaction: ${transactionResult.digest.slice(0, 10)}...`
+          : `Transaction: ${transactionResult.digest.slice(0, 10)}...`,
       });
 
       // Reset form
