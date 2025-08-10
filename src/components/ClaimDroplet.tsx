@@ -81,6 +81,10 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
 
     try {
       setLoading(true);
+      
+      console.log('🔍 Looking up droplet ID:', formData.dropletId);
+      console.log('📋 Using registry:', REGISTRY_ID);
+      console.log('📦 Package ID:', PACKAGE_ID);
 
       // First, get the droplet address by ID
       const inspectResult = await suiClient.devInspectTransactionBlock({
@@ -95,21 +99,32 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         sender: currentAccount.address,
       });
 
+      console.log('🔍 Inspect result:', inspectResult);
+
       // Check if the function returned Some(address) or None
       const returnValues = inspectResult.results?.[0]?.returnValues;
+      console.log('📝 Return values:', returnValues);
+      
       if (!returnValues || returnValues.length === 0) {
+        console.error('❌ No return values from find_droplet_by_id');
         throw new Error('Droplet not found');
       }
 
       // Parse the Option<address> return value
       const optionBytes = returnValues[0][0];
+      console.log('🔧 Option bytes:', optionBytes);
+      
       if (!optionBytes || optionBytes.length === 0) {
+        console.error('❌ No option bytes returned');
         throw new Error('Droplet not found');
       }
 
       // The first byte indicates if it's Some(1) or None(0)
       const isSome = optionBytes[0] === 1;
+      console.log('✅ Is Some?', isSome, 'First byte:', optionBytes[0]);
+      
       if (!isSome) {
+        console.error('❌ Droplet ID not found in registry:', formData.dropletId);
         throw new Error('Droplet not found');
       }
 
