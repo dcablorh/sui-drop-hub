@@ -81,18 +81,14 @@ const Index = () => {
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className="grid w-full grid-cols-6 bg-secondary/50 border border-border/50">
+            <TabsList className="grid w-full grid-cols-5 bg-secondary/50 border border-border/50">
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Create
               </TabsTrigger>
-              <TabsTrigger value="search" className="flex items-center gap-2">
-                <QrCode className="h-4 w-4" />
-                Search
-              </TabsTrigger>
               <TabsTrigger value="claim" className="flex items-center gap-2">
                 <Gift className="h-4 w-4" />
-                Claim
+                Search & Claim
               </TabsTrigger>
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -114,15 +110,14 @@ const Index = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="search" className="space-y-0">
-              <div className="flex justify-center">
-                <QRScanner onDropletIdFound={handleDropletIdFound} />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="claim" className="space-y-0">
-              <div className="flex justify-center">
-                <ClaimDroplet prefilledDropletId={prefilledDropletId} />
+            <TabsContent value="claim" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="flex justify-center">
+                  <QRScanner onDropletIdFound={handleDropletIdFound} />
+                </div>
+                <div className="flex justify-center">
+                  <ClaimDroplet prefilledDropletId={prefilledDropletId} />
+                </div>
               </div>
             </TabsContent>
             
