@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
 import { TrendingUp, Package, Percent, Zap } from 'lucide-react';
-import { useSuiEvents } from '@/hooks/useSuiEvents';
+
 
 interface PlatformStatsData {
   totalDroplets: number;
@@ -55,10 +55,6 @@ export function PlatformStats() {
     return () => clearInterval(interval);
   }, [fetchStats]);
 
-  // Live refresh on new on-chain events
-  useSuiEvents(() => {
-    fetchStats();
-  });
 
   if (loading) {
     return (
