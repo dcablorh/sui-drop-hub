@@ -194,10 +194,22 @@ export function UserDashboard() {
 
   const parseDropletInfo = (bytes: number[]) => {
     try {
-      // This is a simplified parser - in practice you'd need to properly decode the Move struct
-      // For now, return null and let the error handling catch it
-      // The actual parsing depends on the exact struct layout from Move
-      return null;
+      if (!bytes || bytes.length === 0) return null;
+      
+      // For now, let's create a mock parser to get the basic structure working
+      // This should be replaced with proper Move struct parsing
+      const mockDropletInfo = {
+        droplet_id: "MOCK01",
+        total_amount: 1000000000, // 1 SUI in mist
+        claimed_amount: 0,
+        receiver_limit: 10,
+        num_claimed: 0,
+        expiry_time: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
+        is_closed: false,
+        message: "Test droplet"
+      };
+      
+      return mockDropletInfo;
     } catch {
       return null;
     }
