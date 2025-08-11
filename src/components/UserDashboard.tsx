@@ -61,12 +61,12 @@ export function UserDashboard() {
     try {
       setLoading(true);
       
-      // Call get_user_history on the DropletRegistry
+      // Use the enhanced get_user_activity_summary function
       const result = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
           const tx = new TransactionBlock();
           tx.moveCall({
-            target: `${PACKAGE_ID}::${MODULE}::get_user_history`,
+            target: `${PACKAGE_ID}::${MODULE}::get_user_activity_summary`,
             arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
           });
           return tx;
@@ -74,26 +74,49 @@ export function UserDashboard() {
         sender: currentAccount.address,
       });
 
-      if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 2) {
-        // Parse the tuple (vector<String>, vector<String>)
+      if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 4) {
+        // Parse the tuple (vector<String>, vector<String>, u64, u64)
         const createdResult = result.results[0].returnValues[0];
         const claimedResult = result.results[0].returnValues[1];
+        const createdCountResult = result.results[0].returnValues[2];
+        const claimedCountResult = result.results[0].returnValues[3];
         
-        // Parse created droplet IDs
+        // Parse vectors - for now using mock data until BCS parsing is implemented
         const created = parseStringVector(createdResult);
         const claimed = parseStringVector(claimedResult);
         
-        console.log('Fetched user history:', { created, claimed });
+        // Parse counts (little-endian u64)
+        const createdCount = createdCountResult[0]?.reduce((acc: number, byte: number, index: number) => 
+          acc + (byte << (8 * index)), 0) || 0;
+        const claimedCount = claimedCountResult[0]?.reduce((acc: number, byte: number, index: number) => 
+          acc + (byte << (8 * index)), 0) || 0;
         
-        setCreatedDroplets(created);
-        setClaimedDroplets(claimed);
+        console.log('Fetched user activity:', { 
+          created, 
+          claimed, 
+          createdCount, 
+          claimedCount 
+        });
+        
+        // Use actual counts for better mock data generation
+        const mockCreatedIds = Array.from({length: createdCount}, (_, i) => `MOCK${i.toString().padStart(2, '0')}`);
+        const mockClaimedIds = Array.from({length: claimedCount}, (_, i) => `CLMD${i.toString().padStart(2, '0')}`);
+        
+        setCreatedDroplets(mockCreatedIds);
+        setClaimedDroplets(mockClaimedIds);
 
-        // For now, create mock data for display since we need to implement proper droplet object fetching
-        const mockCreatedDetails = created.map(id => createMockDropletSummary(id));
-        const mockClaimedDetails = claimed.map(id => createMockDropletSummary(id));
+        // Generate realistic mock data based on actual counts
+        const mockCreatedDetails = mockCreatedIds.map(id => createMockDropletSummary(id, true));
+        const mockClaimedDetails = mockClaimedIds.map(id => createMockDropletSummary(id, false));
         
         setCreatedDetails(mockCreatedDetails);
         setClaimedDetails(mockClaimedDetails);
+      } else {
+        // No activity found
+        setCreatedDroplets([]);
+        setClaimedDroplets([]);
+        setCreatedDetails([]);
+        setClaimedDetails([]);
       }
     } catch (error) {
       console.error('Failed to fetch user history:', error);
@@ -128,18 +151,24 @@ export function UserDashboard() {
     }
   };
 
-  const createMockDropletSummary = (dropletId: string): DropletSummary => {
+  const createMockDropletSummary = (dropletId: string, isCreated: boolean = true): DropletSummary => {
     const now = Date.now();
+    const isActive = Math.random() > 0.3;
+    const isExpired = !isActive && Math.random() > 0.5;
+    const isClosed = !isActive && !isExpired;
+    
     return {
       dropletId,
-      totalAmount: 1000000000, // 1 SUI in mist
-      claimedAmount: Math.floor(Math.random() * 500000000), // Random claimed amount
-      receiverLimit: 10,
-      numClaimed: Math.floor(Math.random() * 5),
-      expiryTime: now + (Math.random() > 0.5 ? 24 * 60 * 60 * 1000 : -24 * 60 * 60 * 1000), // Some expired, some not
-      isExpired: Math.random() > 0.7,
-      isClosed: Math.random() > 0.8,
-      message: `Test message for droplet ${dropletId}`,
+      totalAmount: Math.floor(Math.random() * 5000000000) + 500000000, // 0.5-5 SUI
+      claimedAmount: Math.floor(Math.random() * 2000000000), // Random claimed amount
+      receiverLimit: Math.floor(Math.random() * 20) + 5, // 5-25 receivers
+      numClaimed: Math.floor(Math.random() * 8),
+      expiryTime: now + (isExpired ? -Math.random() * 24 * 60 * 60 * 1000 : Math.random() * 48 * 60 * 60 * 1000),
+      isExpired,
+      isClosed,
+      message: isCreated 
+        ? `🎁 Welcome bonus from Sui Drop Hub! ID: ${dropletId}` 
+        : `🎉 Claimed from droplet ${dropletId}`,
     };
   };
 
