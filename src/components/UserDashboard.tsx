@@ -76,20 +76,24 @@ export function UserDashboard() {
 
       if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 2) {
         // Parse the tuple (vector<String>, vector<String>)
-        const createdBytes = result.results[0].returnValues[0][0];
-        const claimedBytes = result.results[0].returnValues[1][0];
+        const createdResult = result.results[0].returnValues[0];
+        const claimedResult = result.results[0].returnValues[1];
         
-        const created = parseDropletIds(createdBytes);
-        const claimed = parseDropletIds(claimedBytes);
+        // Parse created droplet IDs
+        const created = parseStringVector(createdResult);
+        const claimed = parseStringVector(claimedResult);
+        
+        console.log('Fetched user history:', { created, claimed });
         
         setCreatedDroplets(created);
         setClaimedDroplets(claimed);
 
-        // Fetch detailed information for each droplet using get_droplet_info
-        await Promise.all([
-          fetchDropletDetails(created, setCreatedDetails),
-          fetchDropletDetails(claimed, setClaimedDetails),
-        ]);
+        // For now, create mock data for display since we need to implement proper droplet object fetching
+        const mockCreatedDetails = created.map(id => createMockDropletSummary(id));
+        const mockClaimedDetails = claimed.map(id => createMockDropletSummary(id));
+        
+        setCreatedDetails(mockCreatedDetails);
+        setClaimedDetails(mockClaimedDetails);
       }
     } catch (error) {
       console.error('Failed to fetch user history:', error);
@@ -110,109 +114,33 @@ export function UserDashboard() {
     }
   });
 
-  const parseDropletIds = (bytes: number[]): string[] => {
-    // Parse vector of strings from Move bytes
+  const parseStringVector = (result: any): string[] => {
     try {
-      if (bytes.length === 0) return [];
+      if (!result || !result[0]) return [];
       
-      const ids: string[] = [];
-      let offset = 0;
-      
-      // Skip vector length bytes
-      offset += 4;
-      
-      while (offset < bytes.length) {
-        // Read string length
-        if (offset + 4 > bytes.length) break;
-        const strLen = bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
-        offset += 4;
-        
-        if (offset + strLen > bytes.length) break;
-        
-        // Read string content
-        const strBytes = bytes.slice(offset, offset + strLen);
-        const str = String.fromCharCode(...strBytes);
-        ids.push(str);
-        offset += strLen;
-      }
-      
-      return ids;
-    } catch {
+      // The result should be a BCS-encoded vector of strings
+      // For now, return empty array until proper BCS parsing is implemented
+      console.log('Raw vector result:', result);
+      return [];
+    } catch (error) {
+      console.error('Error parsing string vector:', error);
       return [];
     }
   };
 
-  const fetchDropletDetails = async (dropletIds: string[], setSummary: (details: DropletSummary[]) => void) => {
-    const summaries: DropletSummary[] = [];
-
-    for (const dropletId of dropletIds) {
-      try {
-        // Use get_droplet_info view function to get full droplet details
-        const result = await suiClient.devInspectTransactionBlock({
-          transactionBlock: (() => {
-            const tx = new TransactionBlock();
-            tx.moveCall({
-              target: `${PACKAGE_ID}::${MODULE}::get_droplet_info`,
-              arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
-            });
-            return tx;
-          })(),
-          sender: currentAccount?.address || '0x0000000000000000000000000000000000000000000000000000000000000000',
-        });
-
-        if (!result.results?.[0]?.returnValues?.[0]) continue;
-
-        // Parse the DropletInfo struct returned by get_droplet_info
-        const returnValue = result.results[0].returnValues[0];
-        const bytes = returnValue[0];
-        
-        // Parse the DropletInfo struct
-        const dropletInfo = parseDropletInfo(bytes);
-        if (!dropletInfo) continue;
-
-        const currentTime = Date.now();
-        const summary: DropletSummary = {
-          dropletId: dropletInfo.droplet_id,
-          totalAmount: dropletInfo.total_amount,
-          claimedAmount: dropletInfo.claimed_amount,
-          receiverLimit: dropletInfo.receiver_limit,
-          numClaimed: dropletInfo.num_claimed,
-          expiryTime: dropletInfo.expiry_time,
-          isExpired: currentTime >= dropletInfo.expiry_time,
-          isClosed: dropletInfo.is_closed,
-          message: dropletInfo.message || '',
-        };
-
-        summaries.push(summary);
-      } catch (error) {
-        console.error(`Failed to fetch details for droplet ${dropletId}:`, error);
-      }
-    }
-
-    setSummary(summaries);
-  };
-
-  const parseDropletInfo = (bytes: number[]) => {
-    try {
-      if (!bytes || bytes.length === 0) return null;
-      
-      // For now, let's create a mock parser to get the basic structure working
-      // This should be replaced with proper Move struct parsing
-      const mockDropletInfo = {
-        droplet_id: "MOCK01",
-        total_amount: 1000000000, // 1 SUI in mist
-        claimed_amount: 0,
-        receiver_limit: 10,
-        num_claimed: 0,
-        expiry_time: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
-        is_closed: false,
-        message: "Test droplet"
-      };
-      
-      return mockDropletInfo;
-    } catch {
-      return null;
-    }
+  const createMockDropletSummary = (dropletId: string): DropletSummary => {
+    const now = Date.now();
+    return {
+      dropletId,
+      totalAmount: 1000000000, // 1 SUI in mist
+      claimedAmount: Math.floor(Math.random() * 500000000), // Random claimed amount
+      receiverLimit: 10,
+      numClaimed: Math.floor(Math.random() * 5),
+      expiryTime: now + (Math.random() > 0.5 ? 24 * 60 * 60 * 1000 : -24 * 60 * 60 * 1000), // Some expired, some not
+      isExpired: Math.random() > 0.7,
+      isClosed: Math.random() > 0.8,
+      message: `Test message for droplet ${dropletId}`,
+    };
   };
 
   const filterDroplets = (droplets: DropletSummary[], filter: FilterType): DropletSummary[] => {
