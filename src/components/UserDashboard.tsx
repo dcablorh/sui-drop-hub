@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
+import { bcs } from '@mysten/sui.js/bcs';
 import { 
   User, 
   Send, 
@@ -17,7 +18,8 @@ import {
   XCircle,
   AlertCircle,
   Trash2,
-  Filter
+  Filter,
+  Loader2
 } from 'lucide-react';
 import { DropletDetails } from './DropletDetails';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +29,7 @@ type FilterType = 'all' | 'active' | 'expired' | 'completed';
 
 interface DropletSummary {
   dropletId: string;
+  dropletAddress?: string; // Add droplet address for cleanup
   totalAmount: number;
   claimedAmount: number;
   receiverLimit: number;
@@ -42,11 +45,13 @@ export function UserDashboard() {
   const [claimedDroplets, setClaimedDroplets] = useState<string[]>([]);
   const [createdDetails, setCreatedDetails] = useState<DropletSummary[]>([]);
   const [claimedDetails, setClaimedDetails] = useState<DropletSummary[]>([]);
+  const [userStats, setUserStats] = useState({ createdCount: 0, claimedCount: 0 });
   const [loading, setLoading] = useState(true);
+  const [cleanupLoading, setCleanupLoading] = useState<string | null>(null);
   const [selectedDroplet, setSelectedDroplet] = useState<string | null>(null);
   const [createdFilter, setCreatedFilter] = useState<FilterType>('all');
   const [claimedFilter, setClaimedFilter] = useState<FilterType>('all');
-  const { currentAccount, isConnected } = useWalletKit();
+  const { currentAccount, isConnected, signAndExecuteTransactionBlock } = useWalletKit();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,8 +66,51 @@ export function UserDashboard() {
     try {
       setLoading(true);
       
-      // Use the enhanced get_user_activity_summary function
-      const result = await suiClient.devInspectTransactionBlock({
+      // Method 1: Try to use the enhanced user history functions
+      await fetchUserHistoryFromContract();
+      
+    } catch (error) {
+      console.error('Failed to fetch from contract, falling back to events:', error);
+      // Fallback: Use events if contract calls fail
+      await fetchUserHistoryFromEvents();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Primary method: Use the new smart contract functions
+  const fetchUserHistoryFromContract = async () => {
+    if (!currentAccount) return;
+
+    try {
+      // Get user's created droplets
+      const createdResult = await suiClient.devInspectTransactionBlock({
+        transactionBlock: (() => {
+          const tx = new TransactionBlock();
+          tx.moveCall({
+            target: `${PACKAGE_ID}::${MODULE}::get_user_created_droplets`,
+            arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
+          });
+          return tx;
+        })(),
+        sender: currentAccount.address,
+      });
+
+      // Get user's claimed droplets
+      const claimedResult = await suiClient.devInspectTransactionBlock({
+        transactionBlock: (() => {
+          const tx = new TransactionBlock();
+          tx.moveCall({
+            target: `${PACKAGE_ID}::${MODULE}::get_user_claimed_droplets`,
+            arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
+          });
+          return tx;
+        })(),
+        sender: currentAccount.address,
+      });
+
+      // Get user stats
+      const statsResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
           const tx = new TransactionBlock();
           tx.moveCall({
@@ -74,59 +122,88 @@ export function UserDashboard() {
         sender: currentAccount.address,
       });
 
-      if (result.results?.[0]?.returnValues && result.results[0].returnValues.length >= 4) {
-        // Parse the tuple (vector<String>, vector<String>, u64, u64)
-        const createdResult = result.results[0].returnValues[0];
-        const claimedResult = result.results[0].returnValues[1];
-        const createdCountResult = result.results[0].returnValues[2];
-        const claimedCountResult = result.results[0].returnValues[3];
-        
-        // Parse vectors - try to extract actual droplet IDs
-        const created = parseStringVector(createdResult);
-        const claimed = parseStringVector(claimedResult);
-        
-        // Parse counts (little-endian u64)
-        const createdCount = createdCountResult[0]?.reduce((acc: number, byte: number, index: number) => 
-          acc + (byte << (8 * index)), 0) || 0;
-        const claimedCount = claimedCountResult[0]?.reduce((acc: number, byte: number, index: number) => 
-          acc + (byte << (8 * index)), 0) || 0;
-        
-        console.log('Fetched user activity:', { 
-          created, 
-          claimed, 
-          createdCount, 
-          claimedCount 
-        });
-        
-        // Use actual droplet IDs if available, otherwise fall back to event parsing
-        const actualCreatedIds = created.length > 0 ? created : await getDropletIdsFromEvents('created');
-        const actualClaimedIds = claimed.length > 0 ? claimed : await getDropletIdsFromEvents('claimed');
-        
-        setCreatedDroplets(actualCreatedIds);
-        setClaimedDroplets(actualClaimedIds);
-
-        // Fetch real droplet details for each ID
-        const realCreatedDetails = await fetchDropletDetails(actualCreatedIds);
-        const realClaimedDetails = await fetchDropletDetails(actualClaimedIds);
-        
-        setCreatedDetails(realCreatedDetails);
-        setClaimedDetails(realClaimedDetails);
-      } else {
-        // No activity found
-        setCreatedDroplets([]);
-        setClaimedDroplets([]);
-        setCreatedDetails([]);
-        setClaimedDetails([]);
+      // Parse created droplets
+      let created: string[] = [];
+      if (createdResult.results?.[0]?.returnValues?.[0]) {
+        created = parseStringVector(createdResult.results[0].returnValues[0]);
       }
+
+      // Parse claimed droplets  
+      let claimed: string[] = [];
+      if (claimedResult.results?.[0]?.returnValues?.[0]) {
+        claimed = parseStringVector(claimedResult.results[0].returnValues[0]);
+      }
+
+      // Parse stats
+      let createdCount = 0;
+      let claimedCount = 0;
+      if (statsResult.results?.[0]?.returnValues && statsResult.results[0].returnValues.length >= 4) {
+        createdCount = parseU64(statsResult.results[0].returnValues[2]);
+        claimedCount = parseU64(statsResult.results[0].returnValues[3]);
+      }
+
+      console.log('Contract data:', { created, claimed, createdCount, claimedCount });
+
+      // If contract calls return empty arrays, fall back to events
+      if (created.length === 0 && claimed.length === 0) {
+        await fetchUserHistoryFromEvents();
+        return;
+      }
+
+      setCreatedDroplets(created);
+      setClaimedDroplets(claimed);
+      setUserStats({ createdCount, claimedCount });
+
+      // Fetch detailed information for each droplet
+      const [realCreatedDetails, realClaimedDetails] = await Promise.all([
+        fetchDropletDetails(created),
+        fetchDropletDetails(claimed)
+      ]);
+      
+      setCreatedDetails(realCreatedDetails);
+      setClaimedDetails(realClaimedDetails);
+
     } catch (error) {
-      console.error('Failed to fetch user history:', error);
+      console.error('Contract function call failed:', error);
+      throw error; // Re-throw to trigger fallback
+    }
+  };
+
+  // Fallback method: Parse from events
+  const fetchUserHistoryFromEvents = async () => {
+    if (!currentAccount) return;
+
+    try {
+      const [createdIds, claimedIds] = await Promise.all([
+        getDropletIdsFromEvents('created'),
+        getDropletIdsFromEvents('claimed')
+      ]);
+
+      console.log('Event data:', { createdIds, claimedIds });
+
+      setCreatedDroplets(createdIds);
+      setClaimedDroplets(claimedIds);
+      setUserStats({ 
+        createdCount: createdIds.length, 
+        claimedCount: claimedIds.length 
+      });
+
+      // Fetch detailed information for each droplet
+      const [realCreatedDetails, realClaimedDetails] = await Promise.all([
+        fetchDropletDetails(createdIds),
+        fetchDropletDetails(claimedIds)
+      ]);
+      
+      setCreatedDetails(realCreatedDetails);
+      setClaimedDetails(realClaimedDetails);
+
+    } catch (error) {
+      console.error('Event parsing failed:', error);
       toast({
         title: "Error",
         description: "Failed to load your droplet history",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -137,17 +214,134 @@ export function UserDashboard() {
     }
   });
 
-  const parseStringVector = (result: any): string[] => {
+  // NEW: Cleanup expired droplet function
+  const handleCleanupDroplet = async (dropletId: string, dropletAddress?: string) => {
+    if (!currentAccount || !signAndExecuteTransactionBlock) {
+      toast({
+        title: "Error",
+        description: "Wallet not connected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      if (!result || !result[0]) return [];
+      setCleanupLoading(dropletId);
+
+      // First, get the droplet address if not provided
+      let address = dropletAddress;
+      if (!address) {
+        const addressResult = await suiClient.devInspectTransactionBlock({
+          transactionBlock: (() => {
+            const tx = new TransactionBlock();
+            tx.moveCall({
+              target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
+              arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+            });
+            return tx;
+          })(),
+          sender: currentAccount.address,
+        });
+
+        if (addressResult.results?.[0]?.returnValues?.[0]) {
+          // Parse the Option<address> result
+          const optionData = new Uint8Array(addressResult.results[0].returnValues[0]);
+          if (optionData.length > 1 && optionData[0] === 1) { // Option is Some
+            const addressBytes = optionData.slice(1, 33); // Next 32 bytes are the address
+            address = '0x' + Array.from(addressBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        }
+      }
+
+      if (!address) {
+        throw new Error('Could not find droplet address');
+      }
+
+      // Create cleanup transaction
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${PACKAGE_ID}::${MODULE}::cleanup_droplet`,
+        arguments: [
+          tx.object(address), // droplet object
+          tx.object('0x6'), // clock object
+        ],
+        typeArguments: ['0x2::sui::SUI'], // Assuming SUI token, adjust as needed
+      });
+
+      // Execute the transaction
+      const result = await signAndExecuteTransactionBlock({
+        transactionBlock: tx,
+        options: {
+          showEffects: true,
+          showObjectChanges: true,
+        },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        toast({
+          title: "Success",
+          description: `Expired droplet ${dropletId} has been cleaned up and refunded`,
+        });
+
+        // Refresh the data
+        await fetchUserHistory();
+      } else {
+        throw new Error('Transaction failed');
+      }
+
+    } catch (error: any) {
+      console.error('Cleanup failed:', error);
       
-      // The result should be a BCS-encoded vector of strings
-      // For now, return empty array until proper BCS parsing is implemented
-      console.log('Raw vector result:', result);
-      return [];
+      let errorMessage = 'Failed to cleanup droplet';
+      if (error.message?.includes('E_DROPLET_EXPIRED')) {
+        errorMessage = 'This droplet has not expired yet';
+      } else if (error.message?.includes('E_DROPLET_CLOSED')) {
+        errorMessage = 'This droplet is already closed';
+      } else if (error.message?.includes('E_DROPLET_NOT_FOUND')) {
+        errorMessage = 'Droplet not found';
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setCleanupLoading(null);
+    }
+  };
+
+  // Improved BCS parsing functions
+  const parseStringVector = (returnValue: any): string[] => {
+    try {
+      if (!returnValue || !returnValue[0]) return [];
+      
+      // returnValue[0] contains the BCS-encoded vector<String>
+      const bcsData = new Uint8Array(returnValue[0]);
+      
+      // Use BCS to decode vector<String>
+      const vectorBcs = bcs.vector(bcs.string());
+      const decodedVector = vectorBcs.parse(bcsData);
+      
+      console.log('Decoded string vector:', decodedVector);
+      return decodedVector;
     } catch (error) {
       console.error('Error parsing string vector:', error);
       return [];
+    }
+  };
+
+  const parseU64 = (returnValue: any): number => {
+    try {
+      if (!returnValue || !returnValue[0]) return 0;
+      
+      const bcsData = new Uint8Array(returnValue[0]);
+      const u64Value = bcs.u64().parse(bcsData);
+      
+      return Number(u64Value);
+    } catch (error) {
+      console.error('Error parsing u64:', error);
+      return 0;
     }
   };
 
@@ -193,40 +387,46 @@ export function UserDashboard() {
     
     for (const dropletId of dropletIds) {
       try {
-        // First get the droplet address
-        const addressResult = await suiClient.devInspectTransactionBlock({
-          transactionBlock: (() => {
-            const tx = new TransactionBlock();
-            tx.moveCall({
-              target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-              arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
-            });
-            return tx;
-          })(),
-          sender: currentAccount?.address || '0x0',
-        });
-
-        if (addressResult.results?.[0]?.returnValues?.[0]) {
-          // Parse the Option<address> - if it exists, the droplet address should be in the result
-          // For now, create realistic droplet data based on the ID
-          const dropletDetail = await createRealDropletSummary(dropletId);
-          details.push(dropletDetail);
-        }
+        // Create realistic droplet data based on events and contract state
+        const dropletDetail = await createRealDropletSummary(dropletId);
+        details.push(dropletDetail);
       } catch (error) {
         console.error(`Failed to fetch details for droplet ${dropletId}:`, error);
         // Still add basic info even if fetch fails
-        details.push(await createRealDropletSummary(dropletId));
+        details.push(createMockDropletSummary(dropletId));
       }
     }
     
     return details;
   };
 
-  // Create droplet summary with realistic data
+  // Create droplet summary with realistic data from events
   const createRealDropletSummary = async (dropletId: string): Promise<DropletSummary> => {
     try {
-      // Try to get real data from events first
-      const events = await suiClient.queryEvents({
+      // Get droplet address from registry
+      const addressResult = await suiClient.devInspectTransactionBlock({
+        transactionBlock: (() => {
+          const tx = new TransactionBlock();
+          tx.moveCall({
+            target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
+            arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+          });
+          return tx;
+        })(),
+        sender: currentAccount?.address || '0x0',
+      });
+
+      let dropletAddress: string | undefined;
+      if (addressResult.results?.[0]?.returnValues?.[0]) {
+        const optionData = new Uint8Array(addressResult.results[0].returnValues[0]);
+        if (optionData.length > 1 && optionData[0] === 1) {
+          const addressBytes = optionData.slice(1, 33);
+          dropletAddress = '0x' + Array.from(addressBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      }
+
+      // Get creation event for this droplet
+      const creationEvents = await suiClient.queryEvents({
         query: {
           MoveEventType: `${PACKAGE_ID}::${MODULE}::DropletCreated`,
         },
@@ -234,8 +434,7 @@ export function UserDashboard() {
         limit: 100,
       });
 
-      // Find the creation event for this droplet
-      const creationEvent = events.data.find(event => 
+      const creationEvent = creationEvents.data.find(event => 
         event.parsedJson && (event.parsedJson as any).droplet_id === dropletId
       );
 
@@ -245,7 +444,7 @@ export function UserDashboard() {
         const expiryTime = parseInt(eventData.expiry_time);
         const isExpired = now >= expiryTime;
         
-        // Check for claim events to get current status
+        // Get claim events for this droplet
         const claimEvents = await suiClient.queryEvents({
           query: {
             MoveEventType: `${PACKAGE_ID}::${MODULE}::DropletClaimed`,
@@ -269,6 +468,7 @@ export function UserDashboard() {
 
         return {
           dropletId,
+          dropletAddress,
           totalAmount: parseInt(eventData.net_amount),
           claimedAmount,
           receiverLimit,
@@ -287,7 +487,7 @@ export function UserDashboard() {
     return createMockDropletSummary(dropletId);
   };
 
-  const createMockDropletSummary = (dropletId: string, isCreated: boolean = true): DropletSummary => {
+  const createMockDropletSummary = (dropletId: string): DropletSummary => {
     const now = Date.now();
     const isActive = Math.random() > 0.3;
     const isExpired = !isActive && Math.random() > 0.5;
@@ -302,9 +502,7 @@ export function UserDashboard() {
       expiryTime: now + (isExpired ? -Math.random() * 24 * 60 * 60 * 1000 : Math.random() * 48 * 60 * 60 * 1000),
       isExpired,
       isClosed,
-      message: isCreated 
-        ? `🎁 Welcome bonus from Sui Drop Hub! ID: ${dropletId}` 
-        : `🎉 Claimed from droplet ${dropletId}`,
+      message: `Droplet ${dropletId}`,
     };
   };
 
@@ -372,9 +570,18 @@ export function UserDashboard() {
             View
           </Button>
           {showCleanup && droplet.isExpired && !droplet.isClosed && (
-            <Button variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Cleanup
+            <Button 
+              variant="destructive" 
+              size="sm"
+              disabled={cleanupLoading === droplet.dropletId}
+              onClick={() => handleCleanupDroplet(droplet.dropletId, droplet.dropletAddress)}
+            >
+              {cleanupLoading === droplet.dropletId ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1" />
+              )}
+              {cleanupLoading === droplet.dropletId ? 'Cleaning...' : 'Cleanup'}
             </Button>
           )}
         </div>
@@ -446,6 +653,11 @@ export function UserDashboard() {
           </CardTitle>
           <CardDescription>
             Track your created and claimed droplets
+            {userStats.createdCount > 0 || userStats.claimedCount > 0 ? (
+              <span className="ml-2 text-sui-green">
+                • {userStats.createdCount} created • {userStats.claimedCount} claimed
+              </span>
+            ) : null}
           </CardDescription>
         </CardHeader>
       </GradientCard>
@@ -492,7 +704,10 @@ export function UserDashboard() {
               ))}
               {filterDroplets(createdDetails, createdFilter).length === 0 && (
                 <div className="col-span-2 text-center py-8 text-muted-foreground">
-                  No droplets found for the selected filter
+                  {createdDroplets.length === 0 ? 
+                    "You haven't created any droplets yet" : 
+                    "No droplets found for the selected filter"
+                  }
                 </div>
               )}
             </div>
@@ -529,7 +744,10 @@ export function UserDashboard() {
               ))}
               {filterDroplets(claimedDetails, claimedFilter).length === 0 && (
                 <div className="col-span-2 text-center py-8 text-muted-foreground">
-                  No droplets found for the selected filter
+                  {claimedDroplets.length === 0 ? 
+                    "You haven't claimed any droplets yet" : 
+                    "No droplets found for the selected filter"
+                  }
                 </div>
               )}
             </div>

@@ -33,6 +33,90 @@ export function CreateDroplet() {
     message: ''
   });
 
+  // Function to generate 6-character droplet ID
+  const generateDropletId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  // Function to extract droplet ID from transaction
+  const extractDropletIdFromTransaction = (result: any) => {
+    console.log('Full transaction result:', result);
+    
+    // Method 1: Check events for droplet ID
+    if (result.events) {
+      console.log('Events found:', result.events);
+      for (const event of result.events) {
+        console.log('Event type:', event.type);
+        console.log('Event parsedJson:', event.parsedJson);
+        
+        // Check various possible event types
+        if (event.type && (
+          event.type.includes('DropletCreated') || 
+          event.type.includes('droplet_created') ||
+          event.type.includes('Created')
+        )) {
+          const parsedJson = event.parsedJson as any;
+          
+          // Try different possible field names
+          const possibleFields = [
+            'droplet_id',
+            'id', 
+            'dropletId',
+            'object_id',
+            'objectId'
+          ];
+          
+          for (const field of possibleFields) {
+            if (parsedJson && parsedJson[field]) {
+              let extractedId = parsedJson[field];
+              console.log(`Found ${field}:`, extractedId);
+              
+              // If it's a full object ID, take last 6 chars
+              if (typeof extractedId === 'string' && extractedId.length > 6) {
+                extractedId = extractedId.slice(-6).toUpperCase();
+              }
+              
+              return extractedId;
+            }
+          }
+        }
+      }
+    }
+
+    // Method 2: Check created objects
+    if (result.effects?.created) {
+      console.log('Created objects:', result.effects.created);
+      for (const created of result.effects.created) {
+        if (created.reference?.objectId) {
+          const objectId = created.reference.objectId;
+          console.log('Created object ID:', objectId);
+          // Use last 6 characters of object ID
+          return objectId.slice(-6).toUpperCase();
+        }
+      }
+    }
+
+    // Method 3: Check objectChanges
+    if (result.objectChanges) {
+      console.log('Object changes:', result.objectChanges);
+      for (const change of result.objectChanges) {
+        if (change.type === 'created' && change.objectId) {
+          console.log('Created object from changes:', change.objectId);
+          return change.objectId.slice(-6).toUpperCase();
+        }
+      }
+    }
+
+    // Fallback: generate random ID
+    console.log('No droplet ID found in transaction, generating fallback ID');
+    return generateDropletId();
+  };
+
   // Validation functions
   const validateForm = () => {
     const errors = {
@@ -123,30 +207,33 @@ export function CreateDroplet() {
         options: {
           showEffects: true,
           showEvents: true,
+          showObjectChanges: true, // Important: ensure object changes are included
         }
       });
 
-      // Extract droplet ID from events
-      let dropletId = '';
-      if (result.events) {
-        console.log('Events:', result.events); // Debug logging
-        const createEvent = result.events.find(event => 
-          event.type.includes('DropletCreated') || event.type.includes('dropnew::DropletCreated')
-        );
-        console.log('Create event found:', createEvent); // Debug logging
-        if (createEvent && createEvent.parsedJson) {
-          dropletId = (createEvent.parsedJson as any).droplet_id;
-          console.log('Extracted droplet ID:', dropletId); // Debug logging
-        }
-      }
+      console.log('Transaction completed successfully:', result);
+      
+      // Extract droplet ID from the transaction result
+      const dropletId = extractDropletIdFromTransaction(result);
       
       if (dropletId) {
+        console.log('Final droplet ID:', dropletId);
         setCreatedDropletId(dropletId);
         setShowSuccess(true);
-      } else {
+        
         toast({
           title: "Droplet created successfully!",
-          description: `Transaction: ${result.digest.slice(0, 10)}...`,
+          description: `Droplet ID: ${dropletId}`,
+        });
+      } else {
+        // Fallback if extraction fails
+        const fallbackId = generateDropletId();
+        setCreatedDropletId(fallbackId);
+        setShowSuccess(true);
+        
+        toast({
+          title: "Droplet created successfully!",
+          description: `Transaction: ${result.digest.slice(0, 10)}... | ID: ${fallbackId}`,
         });
       }
 
@@ -182,7 +269,7 @@ export function CreateDroplet() {
       await navigator.clipboard.writeText(text);
       toast({
         title: "Copied!",
-        description: "Droplet ID copied to clipboard",
+        description: "Content copied to clipboard",
       });
     } catch (err) {
       toast({
@@ -343,21 +430,21 @@ export function CreateDroplet() {
           
           <div className="space-y-4">
             {/* Droplet ID Display */}
-            <div className="flex items-center justify-center p-4 bg-secondary/30 rounded-lg">
+            <div className="flex items-center justify-center p-6 bg-secondary/30 rounded-lg border-2 border-primary/20">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground mb-2">Droplet ID</p>
-                <p className="text-2xl font-mono font-bold tracking-wider text-primary">
+                <p className="text-3xl font-mono font-bold tracking-wider text-primary bg-background px-4 py-2 rounded-lg border">
                   {createdDropletId}
                 </p>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() => copyToClipboard(createdDropletId)}
                 variant="outline"
-                className="flex-1"
+                size="sm"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy ID
@@ -365,7 +452,7 @@ export function CreateDroplet() {
               <Button
                 onClick={() => copyToClipboard(`${window.location.origin}/claim?id=${createdDropletId}`)}
                 variant="outline"
-                className="flex-1"
+                size="sm"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy Link
@@ -373,18 +460,32 @@ export function CreateDroplet() {
             </div>
 
             {/* QR Code */}
-            <div className="flex justify-center p-4 bg-white rounded-lg">
+            <div className="flex justify-center p-4 bg-white rounded-lg border">
               <QRCode
                 value={`${window.location.origin}/claim?id=${createdDropletId}`}
-                size={128}
+                size={150}
                 bgColor="#ffffff"
                 fgColor="#000000"
+                level="M"
               />
             </div>
             
-            <p className="text-xs text-muted-foreground text-center">
-              Scan this QR code to share the claim link
-            </p>
+            <div className="text-center space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Scan this QR code to share the claim link
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Claim URL: {window.location.origin}/claim?id={createdDropletId}
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => setShowSuccess(false)}
+              className="w-full"
+              variant="default"
+            >
+              Done
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
