@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID } from '@/lib/suiClient';
+import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Gift, User, Hash } from 'lucide-react';
 
 interface ClaimDropletProps {
@@ -171,25 +171,12 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
       });
 
     } catch (error: any) {
-      let errorMessage = error.message || 'An unknown error occurred';
-      
-      // Parse common error codes
-      if (errorMessage.includes('E_ALREADY_CLAIMED')) {
-        errorMessage = 'You have already claimed from this droplet';
-      } else if (errorMessage.includes('E_DROPLET_EXPIRED')) {
-        errorMessage = 'This droplet has expired';
-      } else if (errorMessage.includes('E_DROPLET_CLOSED')) {
-        errorMessage = 'This droplet is closed';
-      } else if (errorMessage.includes('E_RECEIVER_LIMIT_REACHED')) {
-        errorMessage = 'Droplet has reached its recipient limit';
-      } else if (errorMessage.includes('E_DROPLET_NOT_FOUND')) {
-        errorMessage = 'Droplet not found. Please check the ID';
-      }
-
+      console.error('Claim failed:', error);
+      const errorMessage = handleTransactionError(error);
       toast({
-        title: "Failed to claim",
+        title: "Claim Failed",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);

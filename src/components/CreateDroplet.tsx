@@ -9,7 +9,7 @@ import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID } from '@/lib/suiClient';
+import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Send, Coins, Users, Clock, MessageSquare, Copy, QrCode, CheckCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -165,10 +165,12 @@ export function CreateDroplet() {
       });
 
     } catch (error: any) {
+      console.error('Creation failed:', error);
+      const errorMessage = handleTransactionError(error);
       toast({
-        title: "Failed to create droplet",
-        description: error.message || 'An unknown error occurred',
-        variant: "destructive"
+        title: "Creation Failed", 
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
