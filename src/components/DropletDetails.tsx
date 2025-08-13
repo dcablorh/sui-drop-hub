@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, CLOCK_ID } from '@/lib/suiClient';
 import { 
   Clock, 
@@ -47,7 +47,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [hasClaimed, setHasClaimed] = useState(false);
-  const { currentAccount } = useWalletKit();
+  const account = useCurrentAccount();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,10 +66,10 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
       // First get droplet address
       const addressResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
           });
           return tx;
         })(),
@@ -107,7 +107,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
       // Get droplet info
       const infoResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_droplet_info`,
             typeArguments: ['0x2::sui::SUI'],
@@ -141,14 +141,14 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
         setDropletInfo(info);
 
         // Check if current user has claimed
-        if (currentAccount) {
+        if (account) {
           const hasClaimedResult = await suiClient.devInspectTransactionBlock({
             transactionBlock: (() => {
-              const tx = new TransactionBlock();
+              const tx = new Transaction();
               tx.moveCall({
                 target: `${PACKAGE_ID}::${MODULE}::has_claimed`,
                 typeArguments: ['0x2::sui::SUI'],
-                arguments: [tx.object(dropletAddress), tx.pure(currentAccount.address)],
+                arguments: [tx.object(dropletAddress), tx.pure.address(account.address)],
               });
               return tx;
             })(),

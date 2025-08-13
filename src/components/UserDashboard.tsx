@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@mysten/sui/bcs';
 import { 
   User, 
   Send, 
@@ -51,17 +51,18 @@ export function UserDashboard() {
   const [selectedDroplet, setSelectedDroplet] = useState<string | null>(null);
   const [createdFilter, setCreatedFilter] = useState<FilterType>('all');
   const [claimedFilter, setClaimedFilter] = useState<FilterType>('all');
-  const { currentAccount, isConnected, signAndExecuteTransactionBlock } = useWalletKit();
+  const account = useCurrentAccount();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isConnected && currentAccount) {
+    if (account) {
       fetchUserHistory();
     }
-  }, [isConnected, currentAccount]);
+  }, [account]);
 
   const fetchUserHistory = async () => {
-    if (!currentAccount) return;
+    if (!account) return;
 
     try {
       setLoading(true);
@@ -80,46 +81,46 @@ export function UserDashboard() {
 
   // Primary method: Use the new smart contract functions
   const fetchUserHistoryFromContract = async () => {
-    if (!currentAccount) return;
+    if (!account) return;
 
     try {
       // Get user's created droplets
       const createdResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_user_created_droplets`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.address(account.address)],
           });
           return tx;
         })(),
-        sender: currentAccount.address,
+        sender: account.address,
       });
 
       // Get user's claimed droplets
       const claimedResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_user_claimed_droplets`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.address(account.address)],
           });
           return tx;
         })(),
-        sender: currentAccount.address,
+        sender: account.address,
       });
 
       // Get user stats
       const statsResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_user_activity_summary`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(currentAccount.address)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.address(account.address)],
           });
           return tx;
         })(),
-        sender: currentAccount.address,
+        sender: account.address,
       });
 
       // Parse created droplets
@@ -171,7 +172,7 @@ export function UserDashboard() {
 
   // Fallback method: Parse from events
   const fetchUserHistoryFromEvents = async () => {
-    if (!currentAccount) return;
+    if (!account) return;
 
     try {
       const [createdIds, claimedIds] = await Promise.all([
@@ -209,14 +210,14 @@ export function UserDashboard() {
 
   // Live refresh on-chain events
   useSuiEvents(() => {
-    if (isConnected && currentAccount) {
+    if (account) {
       fetchUserHistory();
     }
   });
 
   // NEW: Cleanup expired droplet function
   const handleCleanupDroplet = async (dropletId: string, dropletAddress?: string) => {
-    if (!currentAccount || !signAndExecuteTransactionBlock) {
+    if (!account) {
       toast({
         title: "Error",
         description: "Wallet not connected",
@@ -233,14 +234,14 @@ export function UserDashboard() {
       if (!address) {
         const addressResult = await suiClient.devInspectTransactionBlock({
           transactionBlock: (() => {
-            const tx = new TransactionBlock();
+            const tx = new Transaction();
             tx.moveCall({
               target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-              arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+              arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
             });
             return tx;
           })(),
-          sender: currentAccount.address,
+          sender: account.address,
         });
 
         if (addressResult.results?.[0]?.returnValues?.[0]) {
@@ -258,7 +259,7 @@ export function UserDashboard() {
       }
 
       // Create cleanup transaction
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::cleanup_droplet`,
         arguments: [
@@ -269,41 +270,41 @@ export function UserDashboard() {
       });
 
       // Execute the transaction
-      const result = await signAndExecuteTransactionBlock({
-        transactionBlock: tx,
-        options: {
-          showEffects: true,
-          showObjectChanges: true,
+      signAndExecuteTransaction({
+        transaction: tx,
+      }, {
+        onSuccess: (result) => {
+          toast({
+            title: "Success",
+            description: `Expired droplet ${dropletId} has been cleaned up and refunded`,
+          });
+          fetchUserHistory();
         },
+        onError: (error: any) => {
+          console.error('Cleanup failed:', error);
+          
+          let errorMessage = 'Failed to cleanup droplet';
+          if (error.message?.includes('E_DROPLET_EXPIRED')) {
+            errorMessage = 'This droplet has not expired yet';
+          } else if (error.message?.includes('E_DROPLET_CLOSED')) {
+            errorMessage = 'This droplet is already closed';
+          } else if (error.message?.includes('E_DROPLET_NOT_FOUND')) {
+            errorMessage = 'Droplet not found';
+          }
+
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        }
       });
-
-      if (result.effects?.status?.status === 'success') {
-        toast({
-          title: "Success",
-          description: `Expired droplet ${dropletId} has been cleaned up and refunded`,
-        });
-
-        // Refresh the data
-        await fetchUserHistory();
-      } else {
-        throw new Error('Transaction failed');
-      }
 
     } catch (error: any) {
       console.error('Cleanup failed:', error);
-      
-      let errorMessage = 'Failed to cleanup droplet';
-      if (error.message?.includes('E_DROPLET_EXPIRED')) {
-        errorMessage = 'This droplet has not expired yet';
-      } else if (error.message?.includes('E_DROPLET_CLOSED')) {
-        errorMessage = 'This droplet is already closed';
-      } else if (error.message?.includes('E_DROPLET_NOT_FOUND')) {
-        errorMessage = 'Droplet not found';
-      }
-
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "Failed to cleanup droplet",
         variant: "destructive",
       });
     } finally {
@@ -348,7 +349,7 @@ export function UserDashboard() {
   // Fetch droplet IDs from events as fallback
   const getDropletIdsFromEvents = async (type: 'created' | 'claimed'): Promise<string[]> => {
     try {
-      if (!currentAccount) return [];
+      if (!account) return [];
       
       const eventType = type === 'created' ? 'DropletCreated' : 'DropletClaimed';
       const events = await suiClient.queryEvents({
@@ -364,9 +365,9 @@ export function UserDashboard() {
       for (const event of events.data) {
         if (event.parsedJson) {
           const eventData = event.parsedJson as any;
-          if (type === 'created' && eventData.sender === currentAccount.address) {
+          if (type === 'created' && eventData.sender === account.address) {
             userDroplets.push(eventData.droplet_id);
-          } else if (type === 'claimed' && eventData.claimer === currentAccount.address) {
+          } else if (type === 'claimed' && eventData.claimer === account.address) {
             userDroplets.push(eventData.droplet_id);
           }
         }
@@ -406,14 +407,14 @@ export function UserDashboard() {
       // Get droplet address from registry
       const addressResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
           });
           return tx;
         })(),
-        sender: currentAccount?.address || '0x0',
+        sender: account?.address || '0x0',
       });
 
       let dropletAddress: string | undefined;
@@ -620,7 +621,7 @@ export function UserDashboard() {
     </GradientCard>
   );
 
-  if (!isConnected) {
+  if (!account) {
     return (
       <GradientCard className="w-full max-w-4xl mx-auto">
         <CardContent className="p-6 text-center">

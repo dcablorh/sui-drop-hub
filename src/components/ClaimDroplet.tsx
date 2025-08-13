@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ConnectButton, useWalletKit } from '@mysten/wallet-kit';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,8 @@ interface ClaimDropletProps {
 }
 
 export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
-  const { signAndExecuteTransactionBlock, currentAccount, isConnected } = useWalletKit();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const account = useCurrentAccount();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,7 +55,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
   };
 
   const handleClaim = async () => {
-    if (!currentAccount) {
+    if (!account) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to claim",
@@ -78,14 +79,14 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
       // Find droplet address by ID
       const inspectResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new TransactionBlock();
+          const tx = new Transaction();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(formData.dropletId)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.string(formData.dropletId)],
           });
           return tx;
         })(),
-        sender: currentAccount.address,
+        sender: account.address,
       });
 
       const returnValues = inspectResult.results?.[0]?.returnValues;
@@ -97,39 +98,42 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
       const dropletAddress = `0x${Buffer.from(optionBytes.slice(1)).toString('hex')}`;
 
       // Claim transaction
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::claim_internal`,
         typeArguments: [COIN_TYPE],
         arguments: [
           tx.object(REGISTRY_ID),
           tx.object(dropletAddress),
-          tx.pure(formData.dropletId),
-          tx.pure(formData.claimerName),
+          tx.pure.string(formData.dropletId),
+          tx.pure.string(formData.claimerName),
           tx.object(CLOCK_ID),
         ],
       });
 
-      const transactionResult = await signAndExecuteTransactionBlock({ 
-        transactionBlock: tx as any,
-        options: { showEffects: true, showEvents: true }
+      signAndExecuteTransaction({
+        transaction: tx,
+      }, {
+        onSuccess: (transactionResult) => {
+          toast({
+            title: "Successfully claimed!",
+            description: `Tx: ${transactionResult.digest.slice(0, 10)}...`,
+          });
+
+          setFormData({ dropletId: '', claimerName: '' });
+          setFormErrors({ dropletId: '', claimerName: '' });
+          setLoading(false);
+        },
+        onError: (error: any) => {
+          console.error(error);
+          toast({
+            title: "Claim Failed",
+            description: handleTransactionError(error),
+            variant: "destructive",
+          });
+          setLoading(false);
+        }
       });
-
-      let claimMessage = '';
-      const claimEvent = transactionResult.events?.find(e => e.type.includes('DropletClaimed'));
-      if (claimEvent?.parsedJson) {
-        claimMessage = (claimEvent.parsedJson as any).message || '';
-      }
-
-      toast({
-        title: "Successfully claimed!",
-        description: claimMessage 
-          ? `"${claimMessage}" • Tx: ${transactionResult.digest.slice(0, 10)}...`
-          : `Tx: ${transactionResult.digest.slice(0, 10)}...`,
-      });
-
-      setFormData({ dropletId: '', claimerName: '' });
-      setFormErrors({ dropletId: '', claimerName: '' });
 
     } catch (error: any) {
       console.error(error);
@@ -138,7 +142,6 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         description: handleTransactionError(error),
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -159,9 +162,9 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
 
       <CardContent className="space-y-6">
         {/* Wallet Connection */}
-        {!isConnected && (
+        {!account && (
           <div className="w-full flex justify-center">
-            <ConnectButton className="w-full" />
+            <ConnectButton />
           </div>
         )}
 
@@ -203,7 +206,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         {/* Claim Button */}
         <Button
           onClick={handleClaim}
-          disabled={loading || !formData.dropletId || !formData.claimerName || !currentAccount}
+          disabled={loading || !formData.dropletId || !formData.claimerName || !account}
           className="w-full bg-gradient-primary text-primary-foreground"
         >
           {loading ? 'Claiming...' : 'Claim Airdrop'}
