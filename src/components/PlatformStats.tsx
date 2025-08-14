@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Transaction } from '@mysten/sui/transactions';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
 import { TrendingUp, Package, Percent, Zap } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export function PlatformStats() {
     try {
       const result = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new Transaction();
+          const tx = new TransactionBlock();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_platform_stats`,
             arguments: [tx.object(REGISTRY_ID)],

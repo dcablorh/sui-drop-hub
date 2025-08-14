@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Transaction } from '@mysten/sui/transactions';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, CLOCK_ID } from '@/lib/suiClient';
 import { 
   Shield, 
@@ -67,7 +67,7 @@ export function AdminDashboard() {
       // Get platform stats
       const statsResult = await suiClient.devInspectTransactionBlock({
         transactionBlock: (() => {
-          const tx = new Transaction();
+          const tx = new TransactionBlock();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_platform_stats`,
             arguments: [tx.object(REGISTRY_ID)],
@@ -117,7 +117,7 @@ export function AdminDashboard() {
     try {
       setUpdating(true);
 
-      const tx = new Transaction();
+      const tx = new TransactionBlock();
       
       // Note: This would require the AdminCap object ID
       // For now, we'll show the interface but note that actual implementation

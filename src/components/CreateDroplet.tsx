@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
+import { useWalletKit } from '@mysten/wallet-kit';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +15,7 @@ import QRCode from 'react-qr-code';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function CreateDroplet() {
-  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
-  const account = useCurrentAccount();
+  const { signAndExecuteTransactionBlock, currentAccount } = useWalletKit();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -156,7 +155,7 @@ export function CreateDroplet() {
   };
 
   const handleCreate = async () => {
-    if (!account) {
+    if (!currentAccount) {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet to create a droplet",
@@ -181,7 +180,7 @@ export function CreateDroplet() {
       const receiverLimitValue = parseInt(formData.receiverLimit);
       const expiryHoursValue = parseInt(formData.expiryHours);
 
-      const tx = new Transaction();
+      const tx = new TransactionBlock();
       
       // Convert amount to mist (SUI smallest unit: 1 SUI = 1e9 mist)
       const amountInMist = Math.floor(amountValue * 1e9);
@@ -194,71 +193,56 @@ export function CreateDroplet() {
         typeArguments: [COIN_TYPE],
         arguments: [
           tx.object(REGISTRY_ID),
-          tx.pure.u64(amountInMist),
-          tx.pure.u64(receiverLimitValue),
-          tx.pure.option('u64', expiryHoursValue),
-          tx.pure.string(formData.message || 'Airdrop from Sui Drop Hub'),
+          tx.pure(amountInMist),
+          tx.pure(receiverLimitValue),
+          tx.pure([expiryHoursValue]),
+          tx.pure(formData.message || 'Airdrop from Sui Drop Hub'),
           coin, // Use the split coin, not tx.gas
           tx.object(CLOCK_ID),
         ],
       });
 
-      signAndExecuteTransaction({ 
-        transaction: tx,
-      }, {
-        onSuccess: (result) => {
-
-          console.log('Transaction completed successfully:', result);
-          
-          // Extract droplet ID from the transaction result
-          const dropletId = extractDropletIdFromTransaction(result);
-          
-          if (dropletId) {
-            console.log('Final droplet ID:', dropletId);
-            setCreatedDropletId(dropletId);
-            setShowSuccess(true);
-            
-            toast({
-              title: "Droplet created successfully!",
-              description: `Droplet ID: ${dropletId}`,
-            });
-          } else {
-            // Fallback if extraction fails
-            const fallbackId = generateDropletId();
-            setCreatedDropletId(fallbackId);
-            setShowSuccess(true);
-            
-            toast({
-              title: "Droplet created successfully!",
-              description: `Transaction: ${result.digest.slice(0, 10)}... | ID: ${fallbackId}`,
-            });
-          }
-
-          // Reset form
-          setFormData({
-            amount: '',
-            receiverLimit: '',
-            expiryHours: '48',
-            message: ''
-          });
-          setFormErrors({
-            amount: '',
-            receiverLimit: '',
-            expiryHours: '',
-            message: ''
-          });
-          setLoading(false);
-        },
-        onError: (error: any) => {
-          console.error('Creation failed:', error);
-          const errorMessage = handleTransactionError(error);
-          toast({
-            title: "Creation Failed", 
-            description: errorMessage,
-            variant: "destructive",
-          });
-          setLoading(false);
+      const result = await signAndExecuteTransactionBlock({ 
+        transactionBlock: tx as any,
+        options: {
+          showEffects: true,
+          showEvents: true,
+          showObjectChanges: true, // Important: ensure object changes are included
         }
+      });
+
+      console.log('Transaction completed successfully:', result);
+      
+      // Extract droplet ID from the transaction result
+      const dropletId = extractDropletIdFromTransaction(result);
+      
+      if (dropletId) {
+        console.log('Final droplet ID:', dropletId);
+        setCreatedDropletId(dropletId);
+        setShowSuccess(true);
+        
+        toast({
+          title: "Droplet created successfully!",
+          description: `Droplet ID: ${dropletId}`,
+        });
+      } 
+        
+      else {
+        throw new Error('Failed to extract droplet ID from transaction');
+      }
+
+      // Reset form
+      setFormData({
+        amount: '',
+        receiverLimit: '',
+        expiryHours: '48',
+        message: ''
+      });
+      setFormErrors({
+        amount: '',
+        receiverLimit: '',
+        expiryHours: '',
+        message: ''
       });
 
     } catch (error: any) {
@@ -269,6 +253,7 @@ export function CreateDroplet() {
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -417,7 +402,7 @@ export function CreateDroplet() {
 
         <Button
           onClick={handleCreate}
-          disabled={loading || !formData.amount || !formData.receiverLimit || !account}
+          disabled={loading || !formData.amount || !formData.receiverLimit || !currentAccount}
           className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow transition-all duration-300"
         >
           {loading ? 'Creating...' : 'Create Airdrop'}
