@@ -30,10 +30,7 @@ export function WalletConnection() {
         </>
       ) : (
         // Sui Wallet Connect Button — Works on desktop & mobile
-        <ConnectButton
-          connectText="Connect Wallet"
-          className="bg-blue-600 text-white hover:bg-blue-700 rounded-lg px-4 py-2"
-        />
+        <ConnectButton connectText="Connect Wallet" />
       )}
     </div>
   );
