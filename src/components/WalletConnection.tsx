@@ -1,14 +1,15 @@
-import { ConnectButton, useWalletKit } from '@mysten/wallet-kit';
+import { ConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, LogOut } from 'lucide-react';
 
 export function WalletConnection() {
-  const { isConnected, currentAccount, disconnect } = useWalletKit();
+  const currentAccount = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
 
   return (
     <div className="flex items-center gap-2">
-      {isConnected && currentAccount ? (
+      {currentAccount ? (
         <>
           {/* Show connected wallet address */}
           <Badge variant="outline" className="flex items-center gap-1">

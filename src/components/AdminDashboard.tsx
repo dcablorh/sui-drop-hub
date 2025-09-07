@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,8 @@ export function AdminDashboard() {
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [newFeePercentage, setNewFeePercentage] = useState('');
   const [updating, setUpdating] = useState(false);
-  const { currentAccount, isConnected, signAndExecuteTransactionBlock } = useWalletKit();
+  const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -140,16 +141,25 @@ export function AdminDashboard() {
         ],
       });
 
-      await signAndExecuteTransactionBlock({
-        transactionBlock: tx,
+      signAndExecuteTransaction({
+        transaction: tx,
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: `Fee percentage updated to ${feeValue}%`,
+          });
+          fetchAdminStats();
+        },
+        onError: (error) => {
+          console.error('Update fee failed:', error);
+          toast({
+            title: "Failed to Update Fee",
+            description: "Please try again",
+            variant: "destructive",
+          });
+        }
       });
-
-      toast({
-        title: "Success",
-        description: `Fee percentage updated to ${feeValue}%`,
-      });
-
-      fetchAdminStats();
       */
     } catch (error) {
       console.error('Failed to update fee percentage:', error);
@@ -179,7 +189,7 @@ export function AdminDashboard() {
     );
   }
 
-  if (!isConnected) {
+  if (!currentAccount) {
     return (
       <GradientCard className="w-full max-w-4xl mx-auto">
         <CardContent className="p-6 text-center">

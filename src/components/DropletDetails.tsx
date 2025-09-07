@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +47,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [hasClaimed, setHasClaimed] = useState(false);
-  const { currentAccount } = useWalletKit();
+  const currentAccount = useCurrentAccount();
   const { toast } = useToast();
 
   useEffect(() => {

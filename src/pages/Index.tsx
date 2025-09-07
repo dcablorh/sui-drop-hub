@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
@@ -18,7 +18,7 @@ const ADMIN_ADDRESS = '0xe2bf986ccb385f8e5d9500ce8332b69a5cee19579152c240c09213e
 const Index = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [prefilledDropletId, setPrefilledDropletId] = useState('');
-  const { currentAccount, isConnected } = useWalletKit();
+  const currentAccount = useCurrentAccount();
   
   const isAdmin = currentAccount?.address.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
 

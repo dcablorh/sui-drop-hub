@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWalletKit } from '@mysten/wallet-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ interface ClaimDropletProps {
 }
 
 export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
-  const { signAndExecuteTransactionBlock, currentAccount } = useWalletKit();
+  const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -134,40 +135,36 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         ],
       });
 
-      const transactionResult = await signAndExecuteTransactionBlock({ 
-        transactionBlock: tx as any,
-        options: {
-          showEffects: true,
-          showEvents: true,
-        }
-      });
+      signAndExecuteTransaction({ 
+        transaction: tx as any,
+      }, {
+        onSuccess: (result) => {
+          console.log('Claim transaction completed successfully:', result);
+          
+          toast({
+            title: "Successfully claimed!",
+            description: "Your airdrop claim was successful!",
+          });
 
-      // Extract message from claim event if available
-      let claimMessage = '';
-      if (transactionResult.events) {
-        const claimEvent = transactionResult.events.find(event => 
-          event.type.includes('DropletClaimed')
-        );
-        if (claimEvent && claimEvent.parsedJson) {
-          claimMessage = (claimEvent.parsedJson as any).message || '';
+          // Reset form
+          setFormData({
+            dropletId: '',
+            claimerName: ''
+          });
+          setFormErrors({
+            dropletId: '',
+            claimerName: ''
+          });
+        },
+        onError: (error) => {
+          console.error('Claim transaction failed:', error);
+          const errorMessage = handleTransactionError(error);
+          toast({
+            title: "Claim Failed",
+            description: errorMessage,
+            variant: "destructive",
+          });
         }
-      }
-      
-      toast({
-        title: "Successfully claimed!",
-        description: claimMessage 
-          ? `"${claimMessage}" • Transaction: ${transactionResult.digest.slice(0, 10)}...`
-          : `Transaction: ${transactionResult.digest.slice(0, 10)}...`,
-      });
-
-      // Reset form
-      setFormData({
-        dropletId: '',
-        claimerName: ''
-      });
-      setFormErrors({
-        dropletId: '',
-        claimerName: ''
       });
 
     } catch (error: any) {
