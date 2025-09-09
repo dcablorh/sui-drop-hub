@@ -5,6 +5,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Transaction } from '@mysten/sui/transactions';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, CLOCK_ID } from '@/lib/suiClient';
 import { 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Transaction } from '@mysten/sui/transactions';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, CLOCK_ID } from '@/lib/suiClient';
 import { 
@@ -118,7 +119,7 @@ export function AdminDashboard() {
     try {
       setUpdating(true);
 
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       // Note: This would require the AdminCap object ID
       // For now, we'll show the interface but note that actual implementation

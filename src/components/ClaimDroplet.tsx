@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,7 +123,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
       const dropletAddress = `0x${Buffer.from(addressBytes).toString('hex')}`;
 
       // Create transaction to claim
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::claim_internal`,
         typeArguments: [COIN_TYPE],
@@ -135,9 +136,9 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         ],
       });
 
-      signAndExecuteTransaction({ 
-        transaction: tx as any,
-      }, {
+        signAndExecuteTransaction({ 
+          transaction: tx,
+        }, {
         onSuccess: (result) => {
           console.log('Claim transaction completed successfully:', result);
           

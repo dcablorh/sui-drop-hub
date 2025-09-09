@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -181,7 +181,7 @@ export function CreateDroplet() {
       const receiverLimitValue = parseInt(formData.receiverLimit);
       const expiryHoursValue = parseInt(formData.expiryHours);
 
-      const tx = new TransactionBlock();
+      const tx = new Transaction();
       
       // Convert amount to mist (SUI smallest unit: 1 SUI = 1e9 mist)
       const amountInMist = Math.floor(amountValue * 1e9);
@@ -196,7 +196,7 @@ export function CreateDroplet() {
           tx.object(REGISTRY_ID),
           tx.pure.u64(amountInMist),
           tx.pure.u64(receiverLimitValue),
-          tx.pure([expiryHoursValue], 'vector<u64>'),
+          tx.pure.option('u64', expiryHoursValue > 0 ? expiryHoursValue : null),
           tx.pure.string(formData.message || 'Airdrop from Sui Drop Hub'),
           coin, // Use the split coin, not tx.gas
           tx.object(CLOCK_ID),
@@ -204,7 +204,7 @@ export function CreateDroplet() {
       });
 
       signAndExecuteTransaction({ 
-        transaction: tx as any,
+        transaction: tx,
       }, {
         onSuccess: (result) => {
           console.log('Create droplet transaction completed successfully:', result);
