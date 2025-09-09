@@ -5,7 +5,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Transaction } from '@mysten/sui/transactions';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE } from '@/lib/suiClient';
 import { 
   User, 
@@ -61,7 +61,7 @@ export function UserDashboard() {
       setLoading(true);
 
       // Create transaction to get user activity
-      const tx = new Transaction();
+      const tx = new TransactionBlock();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::get_user_activity_summary`,
         arguments: [tx.object(REGISTRY_ID), tx.pure.address(currentAccount.address)],
@@ -179,7 +179,7 @@ export function UserDashboard() {
   const createDropletSummaryFromEvents = async (dropletId: string): Promise<DropletSummary | null> => {
     try {
       // Get droplet address
-      const tx = new Transaction();
+        const tx = new TransactionBlock();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
         arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
@@ -276,7 +276,7 @@ export function UserDashboard() {
         address = dropletSummary.dropletAddress;
       } else {
         // Fetch address from contract
-        const tx = new Transaction();
+        const tx = new TransactionBlock();
         tx.moveCall({
           target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
           arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
@@ -302,7 +302,7 @@ export function UserDashboard() {
       }
 
       // Create cleanup transaction
-      const tx = new Transaction();
+      const tx = new TransactionBlock();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::cleanup_droplet`,
         arguments: [
@@ -315,7 +315,7 @@ export function UserDashboard() {
       // Execute the transaction
       signAndExecuteTransaction(
         {
-          transaction: tx,
+          transaction: tx as any,
         },
         {
           onSuccess: (result) => {

@@ -89,7 +89,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
           const tx = new TransactionBlock();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(formData.dropletId)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.string(formData.dropletId)],
           });
           return tx;
         })(),
@@ -129,8 +129,8 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         arguments: [
           tx.object(REGISTRY_ID),
           tx.object(dropletAddress),
-          tx.pure(formData.dropletId),
-          tx.pure(formData.claimerName),
+          tx.pure.string(formData.dropletId),
+          tx.pure.string(formData.claimerName),
           tx.object(CLOCK_ID),
         ],
       });

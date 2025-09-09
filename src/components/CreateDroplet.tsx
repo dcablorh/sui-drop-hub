@@ -194,10 +194,10 @@ export function CreateDroplet() {
         typeArguments: [COIN_TYPE],
         arguments: [
           tx.object(REGISTRY_ID),
-          tx.pure(amountInMist),
-          tx.pure(receiverLimitValue),
-          tx.pure([expiryHoursValue]),
-          tx.pure(formData.message || 'Airdrop from Sui Drop Hub'),
+          tx.pure.u64(amountInMist),
+          tx.pure.u64(receiverLimitValue),
+          tx.pure([expiryHoursValue], 'vector<u64>'),
+          tx.pure.string(formData.message || 'Airdrop from Sui Drop Hub'),
           coin, // Use the split coin, not tx.gas
           tx.object(CLOCK_ID),
         ],

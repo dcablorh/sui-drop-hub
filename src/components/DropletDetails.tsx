@@ -69,7 +69,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
           const tx = new TransactionBlock();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::find_droplet_by_id`,
-            arguments: [tx.object(REGISTRY_ID), tx.pure(dropletId)],
+            arguments: [tx.object(REGISTRY_ID), tx.pure.string(dropletId)],
           });
           return tx;
         })(),
@@ -148,7 +148,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
               tx.moveCall({
                 target: `${PACKAGE_ID}::${MODULE}::has_claimed`,
                 typeArguments: ['0x2::sui::SUI'],
-                arguments: [tx.object(dropletAddress), tx.pure(currentAccount.address)],
+                arguments: [tx.object(dropletAddress), tx.pure.address(currentAccount.address)],
               });
               return tx;
             })(),
