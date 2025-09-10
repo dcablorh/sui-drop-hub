@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletCoins } from '@/hooks/useWalletCoins';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Send, Coins, Users, Clock, MessageSquare, Copy, QrCode, CheckCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
@@ -18,6 +20,7 @@ export function CreateDroplet() {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
+  const { coinBalances, isLoading: coinsLoading } = useWalletCoins();
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdDropletId, setCreatedDropletId] = useState('');
@@ -25,13 +28,15 @@ export function CreateDroplet() {
     amount: '',
     receiverLimit: '',
     expiryHours: '48',
-    message: ''
+    message: '',
+    selectedCoinType: '0x2::sui::SUI'
   });
   const [formErrors, setFormErrors] = useState({
     amount: '',
     receiverLimit: '',
     expiryHours: '',
-    message: ''
+    message: '',
+    coinType: ''
   });
 
   // Function to generate 6-character droplet ID
@@ -124,7 +129,8 @@ export function CreateDroplet() {
       amount: '',
       receiverLimit: '',
       expiryHours: '',
-      message: ''
+      message: '',
+      coinType: ''
     };
 
     const amountValue = parseFloat(formData.amount);
@@ -149,6 +155,19 @@ export function CreateDroplet() {
     // Validate message length
     if (formData.message && formData.message.length > 200) {
       errors.message = 'Message must be less than 200 characters';
+    }
+
+    // Validate coin type selection
+    const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
+    if (!selectedCoin) {
+      errors.coinType = 'Please select a valid coin type';
+    } else {
+      // Validate amount against available balance
+      const requiredAmount = (parseFloat(formData.amount) * Math.pow(10, selectedCoin.decimals));
+      const availableBalance = parseInt(selectedCoin.balance);
+      if (requiredAmount > availableBalance) {
+        errors.amount = `Insufficient balance. Available: ${selectedCoin.formatted}`;
+      }
     }
 
     setFormErrors(errors);
@@ -177,24 +196,29 @@ export function CreateDroplet() {
     try {
       setLoading(true);
       
+      const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
+      if (!selectedCoin) {
+        throw new Error('Selected coin type not found');
+      }
+
       const amountValue = parseFloat(formData.amount);
       const receiverLimitValue = parseInt(formData.receiverLimit);
       const expiryHoursValue = parseInt(formData.expiryHours);
 
       const tx = new Transaction();
       
-      // Convert amount to mist (SUI smallest unit: 1 SUI = 1e9 mist)
-      const amountInMist = Math.floor(amountValue * 1e9);
+      // Convert amount to the selected coin's smallest unit
+      const amountInSmallestUnit = Math.floor(amountValue * Math.pow(10, selectedCoin.decimals));
 
       // Create a coin object for the airdrop amount (not the gas coin)
-      const [coin] = tx.splitCoins(tx.gas, [amountInMist]);
+      const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
 
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::create_droplet`,
-        typeArguments: [COIN_TYPE],
+        typeArguments: [formData.selectedCoinType],
         arguments: [
           tx.object(REGISTRY_ID),
-          tx.pure.u64(amountInMist),
+          tx.pure.u64(amountInSmallestUnit),
           tx.pure.u64(receiverLimitValue),
           tx.pure.option('u64', expiryHoursValue > 0 ? expiryHoursValue : null),
           tx.pure.string(formData.message || 'Airdrop from Sui Drop Hub'),
@@ -206,17 +230,43 @@ export function CreateDroplet() {
       signAndExecuteTransaction({ 
         transaction: tx,
       }, {
-        onSuccess: (result) => {
+        onSuccess: (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // For now, show success without extracting droplet ID from events
-          // This can be improved later to extract the actual droplet ID
-          setCreatedDropletId('SUCCESS');
+          // Extract droplet ID from events with proper type checking
+          let createdDropletId = '';
+          
+          if (result && typeof result === 'object' && result.effects && typeof result.effects === 'object') {
+            const effects = result.effects;
+            if (effects.events && Array.isArray(effects.events)) {
+              for (const event of effects.events) {
+                if (event.type && event.type.includes('DropletCreated') && event.parsedJson) {
+                  createdDropletId = event.parsedJson.droplet_id || '';
+                  break;
+                }
+              }
+            }
+            
+            if (!createdDropletId && effects.created && Array.isArray(effects.created)) {
+              // Fallback to generating ID from created objects
+              const created = effects.created;
+              if (created.length > 0) {
+                const objectId = created[0]?.reference?.objectId;
+                if (objectId && typeof objectId === 'string') {
+                  createdDropletId = objectId.slice(-6).toUpperCase();
+                }
+              }
+            }
+          }
+          
+          setCreatedDropletId(createdDropletId || 'SUCCESS');
           setShowSuccess(true);
           
           toast({
             title: "Droplet created successfully!",
-            description: "Your airdrop droplet has been created!",
+            description: createdDropletId 
+              ? `Your airdrop is ready! Droplet ID: ${createdDropletId}` 
+              : "Your airdrop droplet has been created!",
           });
 
           // Reset form
@@ -224,13 +274,15 @@ export function CreateDroplet() {
             amount: '',
             receiverLimit: '',
             expiryHours: '48',
-            message: ''
+            message: '',
+            selectedCoinType: '0x2::sui::SUI'
           });
           setFormErrors({
             amount: '',
             receiverLimit: '',
             expiryHours: '',
-            message: ''
+            message: '',
+            coinType: ''
           });
         },
         onError: (error) => {
@@ -295,19 +347,51 @@ export function CreateDroplet() {
           <div className="space-y-2">
             <Label htmlFor="amount" className="flex items-center gap-2">
               <Coins className="h-4 w-4" />
-              Total Amount (SUI)
+              Amount
             </Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.1"
-              placeholder="10.0"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.amount ? 'border-destructive' : ''}`}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="amount"
+                type="number"
+                step="0.0001"
+                min="0"
+                placeholder="10.5"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                className={`bg-secondary/50 border-border/50 focus:border-primary/50 flex-1 ${formErrors.amount ? 'border-destructive' : ''}`}
+              />
+              <Select
+                value={formData.selectedCoinType}
+                onValueChange={(value) => setFormData({ ...formData, selectedCoinType: value })}
+              >
+                <SelectTrigger className="w-32 bg-secondary/50 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {coinsLoading ? (
+                    <SelectItem value="" disabled>Loading...</SelectItem>
+                  ) : coinBalances.length === 0 ? (
+                    <SelectItem value="" disabled>No coins available</SelectItem>
+                  ) : (
+                    coinBalances.map((coin) => (
+                      <SelectItem key={coin.coinType} value={coin.coinType}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{coin.symbol}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {coin.formatted}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             {formErrors.amount && (
               <p className="text-sm text-destructive mt-1">{formErrors.amount}</p>
+            )}
+            {formErrors.coinType && (
+              <p className="text-sm text-destructive mt-1">{formErrors.coinType}</p>
             )}
           </div>
 
@@ -443,7 +527,7 @@ export function CreateDroplet() {
                 Copy ID
               </Button>
               <Button
-                onClick={() => copyToClipboard(`${window.location.origin}/claim?id=${createdDropletId}`)}
+                onClick={() => copyToClipboard(`${window.location.origin}/claim/${createdDropletId}`)}
                 variant="outline"
                 size="sm"
               >
@@ -455,7 +539,7 @@ export function CreateDroplet() {
             {/* QR Code */}
             <div className="flex justify-center p-4 bg-white rounded-lg border">
               <QRCode
-                value={`${window.location.origin}/claim?id=${createdDropletId}`}
+                value={`${window.location.origin}/claim/${createdDropletId}`}
                 size={150}
                 bgColor="#ffffff"
                 fgColor="#000000"
@@ -468,7 +552,7 @@ export function CreateDroplet() {
                 Scan this QR code to share the claim link
               </p>
               <p className="text-xs text-muted-foreground">
-                Claim URL: {window.location.origin}/claim?id={createdDropletId}
+                Claim URL: {window.location.origin}/claim/{createdDropletId}
               </p>
             </div>
 

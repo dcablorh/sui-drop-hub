@@ -10,6 +10,8 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Gift, User, Hash } from 'lucide-react';
+import dropletIcon from '@/assets/droplet-icon.png';
+import suiCoinIcon from '@/assets/sui-coin-icon.png';
 
 interface ClaimDropletProps {
   prefilledDropletId?: string;
@@ -139,12 +141,39 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         signAndExecuteTransaction({ 
           transaction: tx,
         }, {
-        onSuccess: (result) => {
+        onSuccess: (result: any) => {
           console.log('Claim transaction completed successfully:', result);
           
+          // Extract claim details from events with proper type checking
+          let claimMessage = '';
+          let claimAmount = '';
+          
+          if (result && typeof result === 'object' && result.effects && typeof result.effects === 'object') {
+            const effects = result.effects;
+            if (effects.events && Array.isArray(effects.events)) {
+              for (const event of effects.events) {
+                if (event.type && event.type.includes('DropletClaimed') && event.parsedJson) {
+                  claimMessage = event.parsedJson.message || '';
+                  claimAmount = event.parsedJson.claim_amount || '';
+                  break;
+                }
+              }
+            }
+          }
+          
           toast({
-            title: "Successfully claimed!",
-            description: "Your airdrop claim was successful!",
+            title: "🎉 Successfully claimed!",
+            description: (
+              <div className="flex items-center gap-2">
+                <img src={dropletIcon} alt="Droplet" className="w-6 h-6" />
+                <img src={suiCoinIcon} alt="SUI Coin" className="w-6 h-6" />
+                <span>
+                  {claimMessage 
+                    ? `Message: "${claimMessage}" • Amount claimed successfully!` 
+                    : "Your airdrop claim was successful!"}
+                </span>
+              </div>
+            ),
           });
 
           // Reset form

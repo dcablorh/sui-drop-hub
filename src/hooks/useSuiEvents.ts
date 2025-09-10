@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { suiClient, PACKAGE_ID, MODULE } from '@/lib/suiClient';
 
-// Lightweight polling hook for Sui Move events from our package/module
+// Optimized polling hook for Sui Move events from our package/module
 // Calls onEvents with any new events; keeps a cursor to avoid duplicates
-export function useSuiEvents(onEvents?: (events: any[]) => void, pollMs: number = 6000) {
+// Reduced polling interval for faster dashboard updates
+export function useSuiEvents(onEvents?: (events: any[]) => void, pollMs: number = 3000) {
   const cursorRef = useRef<any>(null);
   const mounted = useRef(true);
 
@@ -15,7 +16,8 @@ export function useSuiEvents(onEvents?: (events: any[]) => void, pollMs: number 
         const res: any = await suiClient.queryEvents({
           query: { MoveModule: { package: PACKAGE_ID as any, module: MODULE as any } } as any,
           cursor: cursorRef.current || undefined,
-          limit: 20,
+          limit: 50, // Increased limit for better batching
+          order: 'descending', // Get latest events first
         });
 
         if (!mounted.current) return;

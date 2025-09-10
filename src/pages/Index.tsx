@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
@@ -19,18 +20,27 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [prefilledDropletId, setPrefilledDropletId] = useState('');
   const currentAccount = useCurrentAccount();
+  const { dropletId: routeDropletId } = useParams();
   
   const isAdmin = currentAccount?.address.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
 
-  // Check URL parameters for direct claiming
+  // Check URL parameters and route params for direct claiming
   useEffect(() => {
+    // First check route params
+    if (routeDropletId && routeDropletId.length === 6 && /^[A-Z0-9]{6}$/.test(routeDropletId.toUpperCase())) {
+      setPrefilledDropletId(routeDropletId.toUpperCase());
+      setActiveTab('claim');
+      return;
+    }
+    
+    // Then check URL search params for backward compatibility
     const urlParams = new URLSearchParams(window.location.search);
-    const dropletId = urlParams.get('id');
-    if (dropletId && dropletId.length === 6 && /^[A-Z0-9]{6}$/.test(dropletId.toUpperCase())) {
-      setPrefilledDropletId(dropletId.toUpperCase());
+    const searchDropletId = urlParams.get('id');
+    if (searchDropletId && searchDropletId.length === 6 && /^[A-Z0-9]{6}$/.test(searchDropletId.toUpperCase())) {
+      setPrefilledDropletId(searchDropletId.toUpperCase());
       setActiveTab('claim');
     }
-  }, []);
+  }, [routeDropletId]);
 
   const handleDropletIdFound = (dropletId: string) => {
     setPrefilledDropletId(dropletId);
