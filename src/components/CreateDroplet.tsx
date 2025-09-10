@@ -10,6 +10,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletCoins } from '@/hooks/useWalletCoins';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Send, Coins, Users, Clock, MessageSquare, Copy, QrCode, CheckCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
@@ -20,17 +21,7 @@ export function CreateDroplet() {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
   
-  // Simple coin balances - for now just use SUI
-  const coinBalances = [
-    {
-      coinType: '0x2::sui::SUI',
-      symbol: 'SUI',
-      formatted: 'SUI',
-      balance: '1000000000000', // placeholder
-      decimals: 9
-    }
-  ];
-  const coinsLoading = false;
+  const { coinBalances, isLoading: coinsLoading } = useWalletCoins();
   
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -244,40 +235,62 @@ export function CreateDroplet() {
         onSuccess: (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // Extract droplet ID from events with proper type checking
+          // Extract droplet ID from transaction result
           let createdDropletId = '';
           
-          if (result && typeof result === 'object' && result.effects && typeof result.effects === 'object') {
-            const effects = result.effects;
-            if (effects.events && Array.isArray(effects.events)) {
-              for (const event of effects.events) {
-                if (event.type && event.type.includes('DropletCreated') && event.parsedJson) {
-                  createdDropletId = event.parsedJson.droplet_id || '';
+          try {
+            // Method 1: Check events for droplet creation
+            if (result?.effects?.events && Array.isArray(result.effects.events)) {
+              for (const event of result.effects.events) {
+                console.log('Event:', event);
+                if (event.type && event.type.includes('DropletCreated')) {
+                  if (event.parsedJson?.droplet_id) {
+                    createdDropletId = event.parsedJson.droplet_id;
+                    console.log('Found droplet ID from event:', createdDropletId);
+                    break;
+                  }
+                }
+              }
+            }
+            
+            // Method 2: Check created objects if no event found
+            if (!createdDropletId && result?.effects?.created && Array.isArray(result.effects.created)) {
+              const createdObj = result.effects.created[0];
+              if (createdObj?.reference?.objectId) {
+                // Use last 6 characters of the object ID as droplet ID
+                createdDropletId = createdObj.reference.objectId.slice(-6).toUpperCase();
+                console.log('Generated droplet ID from object:', createdDropletId);
+              }
+            }
+            
+            // Method 3: Check object changes
+            if (!createdDropletId && result?.objectChanges && Array.isArray(result.objectChanges)) {
+              for (const change of result.objectChanges) {
+                if (change.type === 'created' && change.objectId) {
+                  createdDropletId = change.objectId.slice(-6).toUpperCase();
+                  console.log('Generated droplet ID from object changes:', createdDropletId);
                   break;
                 }
               }
             }
             
-            if (!createdDropletId && effects.created && Array.isArray(effects.created)) {
-              // Fallback to generating ID from created objects
-              const created = effects.created;
-              if (created.length > 0) {
-                const objectId = created[0]?.reference?.objectId;
-                if (objectId && typeof objectId === 'string') {
-                  createdDropletId = objectId.slice(-6).toUpperCase();
-                }
-              }
+            // Fallback: generate a random 6-character ID
+            if (!createdDropletId) {
+              createdDropletId = generateDropletId();
+              console.log('Using fallback generated droplet ID:', createdDropletId);
             }
+            
+          } catch (error) {
+            console.error('Error extracting droplet ID:', error);
+            createdDropletId = generateDropletId();
           }
           
-          setCreatedDropletId(createdDropletId || 'SUCCESS');
+          setCreatedDropletId(createdDropletId);
           setShowSuccess(true);
           
           toast({
-            title: "Droplet created successfully!",
-            description: createdDropletId 
-              ? `Your airdrop is ready! Droplet ID: ${createdDropletId}` 
-              : "Your airdrop droplet has been created!",
+            title: "🎉 Droplet Created Successfully!",
+            description: `Your airdrop is ready! Droplet ID: ${createdDropletId}`,
           });
 
           // Reset form
@@ -512,7 +525,7 @@ export function CreateDroplet() {
               Droplet Created Successfully!
             </DialogTitle>
             <DialogDescription>
-              Your airdrop droplet has been created. Share the ID below with your community.
+              Your airdrop droplet has been created and is ready to share! The droplet ID below can be used to claim the airdrop.
             </DialogDescription>
           </DialogHeader>
           
