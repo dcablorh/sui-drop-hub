@@ -10,8 +10,6 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Gift, User, Hash } from 'lucide-react';
-import dropletIcon from '@/assets/droplet-icon.png';
-import suiCoinIcon from '@/assets/sui-coin-icon.png';
 
 interface ClaimDropletProps {
   prefilledDropletId?: string;
@@ -163,17 +161,9 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
           
           toast({
             title: "🎉 Successfully claimed!",
-            description: (
-              <div className="flex items-center gap-2">
-                <img src={dropletIcon} alt="Droplet" className="w-6 h-6" />
-                <img src={suiCoinIcon} alt="SUI Coin" className="w-6 h-6" />
-                <span>
-                  {claimMessage 
-                    ? `Message: "${claimMessage}" • Amount claimed successfully!` 
-                    : "Your airdrop claim was successful!"}
-                </span>
-              </div>
-            ),
+            description: claimMessage 
+              ? `Message: "${claimMessage}" • Amount claimed successfully!` 
+              : "Your airdrop claim was successful!",
           });
 
           // Reset form

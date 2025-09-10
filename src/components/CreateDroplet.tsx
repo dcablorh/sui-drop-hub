@@ -10,7 +10,6 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useWalletCoins } from '@/hooks/useWalletCoins';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { Send, Coins, Users, Clock, MessageSquare, Copy, QrCode, CheckCircle } from 'lucide-react';
 import QRCode from 'react-qr-code';
@@ -20,7 +19,19 @@ export function CreateDroplet() {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();
-  const { coinBalances, isLoading: coinsLoading } = useWalletCoins();
+  
+  // Simple coin balances - for now just use SUI
+  const coinBalances = [
+    {
+      coinType: '0x2::sui::SUI',
+      symbol: 'SUI',
+      formatted: 'SUI',
+      balance: '1000000000000', // placeholder
+      decimals: 9
+    }
+  ];
+  const coinsLoading = false;
+  
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdDropletId, setCreatedDropletId] = useState('');
@@ -369,9 +380,9 @@ export function CreateDroplet() {
                 </SelectTrigger>
                 <SelectContent>
                   {coinsLoading ? (
-                    <SelectItem value="" disabled>Loading...</SelectItem>
+                    <SelectItem value="loading" disabled>Loading...</SelectItem>
                   ) : coinBalances.length === 0 ? (
-                    <SelectItem value="" disabled>No coins available</SelectItem>
+                    <SelectItem value="no-coins" disabled>No coins available</SelectItem>
                   ) : (
                     coinBalances.map((coin) => (
                       <SelectItem key={coin.coinType} value={coin.coinType}>
