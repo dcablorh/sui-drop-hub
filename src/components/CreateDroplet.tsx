@@ -212,8 +212,56 @@ export function CreateDroplet() {
       // Convert amount to the selected coin's smallest unit
       const amountInSmallestUnit = Math.floor(amountValue * Math.pow(10, selectedCoin.decimals));
 
-      // Create a coin object for the airdrop amount (not the gas coin)
-      const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
+      // Get coin objects for the selected coin type from wallet
+      let coinToUse;
+      
+      if (formData.selectedCoinType === '0x2::sui::SUI') {
+        // For SUI, we can split from gas
+        const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
+        coinToUse = coin;
+      } else {
+        // For other coin types, we need to find actual coin objects from the wallet
+        // This is a simplified approach - in production you'd want to merge multiple coins if needed
+        const coinObjects = await suiClient.getCoins({
+          owner: currentAccount.address,
+          coinType: formData.selectedCoinType,
+          limit: 50
+        });
+        
+        if (!coinObjects.data || coinObjects.data.length === 0) {
+          throw new Error(`No ${selectedCoin.symbol} coins found in wallet`);
+        }
+        
+        // Find a coin with sufficient balance or merge coins
+        let totalBalance = 0;
+        const suitableCoins = [];
+        
+        for (const coin of coinObjects.data) {
+          totalBalance += parseInt(coin.balance);
+          suitableCoins.push(coin.coinObjectId);
+          if (totalBalance >= amountInSmallestUnit) break;
+        }
+        
+        if (totalBalance < amountInSmallestUnit) {
+          throw new Error(`Insufficient ${selectedCoin.symbol} balance`);
+        }
+        
+        // If we need to merge coins
+        if (suitableCoins.length > 1) {
+          const primaryCoin = tx.object(suitableCoins[0]);
+          const coinsToMerge = suitableCoins.slice(1).map(id => tx.object(id));
+          tx.mergeCoins(primaryCoin, coinsToMerge);
+          coinToUse = primaryCoin;
+        } else {
+          coinToUse = tx.object(suitableCoins[0]);
+        }
+        
+        // Split the exact amount needed
+        if (totalBalance > amountInSmallestUnit) {
+          const [splitCoin] = tx.splitCoins(coinToUse, [amountInSmallestUnit]);
+          coinToUse = splitCoin;
+        }
+      }
 
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::create_droplet`,
@@ -224,7 +272,7 @@ export function CreateDroplet() {
           tx.pure.u64(receiverLimitValue),
           tx.pure.option('u64', expiryHoursValue > 0 ? expiryHoursValue : null),
           tx.pure.string(formData.message || 'Airdrop from Sui Drop Hub'),
-          coin, // Use the split coin, not tx.gas
+          coinToUse,
           tx.object(CLOCK_ID),
         ],
       });
@@ -235,46 +283,39 @@ export function CreateDroplet() {
         onSuccess: (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // Extract droplet ID from transaction result
+          // Extract 6-character droplet ID from transaction events
           let createdDropletId = '';
           
           try {
-            // Method 1: Check events for droplet creation
-            if (result?.effects?.events && Array.isArray(result.effects.events)) {
-              for (const event of result.effects.events) {
-                console.log('Event:', event);
-                if (event.type && event.type.includes('DropletCreated')) {
-                  if (event.parsedJson?.droplet_id) {
-                    createdDropletId = event.parsedJson.droplet_id;
-                    console.log('Found droplet ID from event:', createdDropletId);
+            // Primary method: Check events for the actual emitted droplet_id
+            if (result?.events && Array.isArray(result.events)) {
+              for (const event of result.events) {
+                console.log('Checking event:', event.type, event.parsedJson);
+                if (event.type && (
+                  event.type.includes('DropletCreated') || 
+                  event.type.includes('droplet_created') ||
+                  event.type.includes('Created')
+                )) {
+                  const parsedJson = event.parsedJson;
+                  if (parsedJson && parsedJson.droplet_id) {
+                    createdDropletId = parsedJson.droplet_id;
+                    console.log('Found emitted droplet ID:', createdDropletId);
                     break;
                   }
                 }
               }
             }
             
-            // Method 2: Check created objects if no event found
+            // Fallback: If no event found, use last 6 chars of created object
             if (!createdDropletId && result?.effects?.created && Array.isArray(result.effects.created)) {
               const createdObj = result.effects.created[0];
               if (createdObj?.reference?.objectId) {
-                // Use last 6 characters of the object ID as droplet ID
                 createdDropletId = createdObj.reference.objectId.slice(-6).toUpperCase();
                 console.log('Generated droplet ID from object:', createdDropletId);
               }
             }
             
-            // Method 3: Check object changes
-            if (!createdDropletId && result?.objectChanges && Array.isArray(result.objectChanges)) {
-              for (const change of result.objectChanges) {
-                if (change.type === 'created' && change.objectId) {
-                  createdDropletId = change.objectId.slice(-6).toUpperCase();
-                  console.log('Generated droplet ID from object changes:', createdDropletId);
-                  break;
-                }
-              }
-            }
-            
-            // Fallback: generate a random 6-character ID
+            // Last resort: Generate random ID
             if (!createdDropletId) {
               createdDropletId = generateDropletId();
               console.log('Using fallback generated droplet ID:', createdDropletId);
@@ -290,7 +331,7 @@ export function CreateDroplet() {
           
           toast({
             title: "🎉 Droplet Created Successfully!",
-            description: `Your airdrop is ready! Droplet ID: ${createdDropletId}`,
+            description: `Droplet ID: ${createdDropletId} - Share this ID to distribute your airdrop!`,
           });
 
           // Reset form

@@ -131,13 +131,8 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="claim" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="flex justify-center">
-                  <QRScanner onDropletIdFound={handleDropletIdFound} />
-                </div>
-                <div className="flex justify-center">
-                  <ClaimDroplet prefilledDropletId={prefilledDropletId} />
-                </div>
+              <div className="flex justify-center">
+                <ClaimDroplet prefilledDropletId={prefilledDropletId} />
               </div>
             </TabsContent>
             
