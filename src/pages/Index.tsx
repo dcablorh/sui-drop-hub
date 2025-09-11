@@ -52,47 +52,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center space-y-8 max-w-4xl mx-auto">
-          <div className="space-y-4">
-            <Badge variant="outline" className="border-primary/30 text-primary animate-pulse-slow">
-              <Zap className="h-3 w-3 mr-1" />
-              Powered by Sui Network
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent leading-tight">
-              Sui Drop Hub
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Create and claim airdrops on the Sui blockchain. Fast, secure, and efficient token distribution platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div className="flex flex-col items-center space-y-3 p-6 rounded-lg bg-gradient-hero border border-primary/20">
-              <Shield className="h-8 w-8 text-sui-blue" />
-              <h3 className="font-semibold">Secure</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Built on Sui's secure smart contract platform
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-3 p-6 rounded-lg bg-gradient-hero border border-primary/20">
-              <Zap className="h-8 w-8 text-sui-yellow" />
-              <h3 className="font-semibold">Fast</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Lightning-fast transactions with low fees
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-3 p-6 rounded-lg bg-gradient-hero border border-primary/20">
-              <Star className="h-8 w-8 text-sui-purple" />
-              <h3 className="font-semibold">Simple</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Easy-to-use interface for creating and claiming airdrops
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* Main Content */}
       <section className="container mx-auto px-4 pb-16">
@@ -139,9 +99,7 @@ const Index = () => {
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">or</span>
-                    </div>
+                    
                   </div>
                 </div>
                 <CleanupDroplet />

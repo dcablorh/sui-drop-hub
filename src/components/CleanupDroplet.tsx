@@ -202,49 +202,5 @@ export function CleanupDroplet() {
     }
   };
 
-  return (
-    <GradientCard variant="glow" className="w-full max-w-lg">
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
-            <RefreshCw className="h-4 w-4 text-white" />
-          </div>
-          <CardTitle className="text-xl">Cleanup Expired Droplet</CardTitle>
-        </div>
-        <CardDescription>
-          Cleanup expired droplets to reclaim remaining funds
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="cleanupDropletId" className="flex items-center gap-2">
-            <Hash className="h-4 w-4" />
-            Droplet ID
-          </Label>
-          <Input
-            id="cleanupDropletId"
-            placeholder="A1B2C3"
-            value={dropletId}
-            onChange={(e) => {
-              setDropletId(e.target.value.toUpperCase());
-              if (error) setError('');
-            }}
-            className={`bg-secondary/50 border-border/50 focus:border-primary/50 font-mono ${error ? 'border-destructive' : ''}`}
-            maxLength={6}
-          />
-          {error && (
-            <p className="text-sm text-destructive mt-1">{error}</p>
-          )}
-        </div>
-
-        <Button
-          onClick={handleCleanup}
-          disabled={loading || !dropletId || !currentAccount}
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:opacity-90 text-white shadow-glow transition-all duration-300"
-        >
-          {loading ? 'Processing...' : 'Cleanup Expired Droplet'}
-        </Button>
-      </CardContent>
-    </GradientCard>
-  );
+  //
 }
