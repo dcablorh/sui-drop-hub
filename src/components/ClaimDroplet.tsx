@@ -115,18 +115,44 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
       const isSome = optionBytes[0] === 1;
       
       if (!isSome) {
-        throw new Error('Droplet not found');
+        throw new Error('Droplet not found with ID: ' + formData.dropletId);
       }
 
       // Extract the address bytes (skip the first byte which is the option indicator)
       const addressBytes = optionBytes.slice(1);
       const dropletAddress = `0x${Buffer.from(addressBytes).toString('hex')}`;
 
-      // Create transaction to claim
+      // Get the droplet object to determine its coin type
+      const dropletObject = await suiClient.getObject({
+        id: dropletAddress,
+        options: { showType: true, showContent: true }
+      });
+
+      if (!dropletObject.data) {
+        throw new Error('Droplet object not found');
+      }
+
+      // Extract coin type from the droplet object type
+      // Type format: "0xpackage::module::Droplet<0x2::sui::SUI>"
+      const dropletType = dropletObject.data.type;
+      if (!dropletType) {
+        throw new Error('Unable to determine droplet type');
+      }
+
+      // Extract the CoinType from the generic type parameter
+      const coinTypeMatch = dropletType.match(/<(.+)>/);
+      if (!coinTypeMatch || !coinTypeMatch[1]) {
+        throw new Error('Unable to extract coin type from droplet');
+      }
+
+      const coinType = coinTypeMatch[1];
+      console.log('Detected coin type:', coinType);
+
+      // Create transaction to claim with the correct coin type
       const tx = new Transaction();
       tx.moveCall({
         target: `${PACKAGE_ID}::${MODULE}::claim_internal`,
-        typeArguments: [COIN_TYPE],
+        typeArguments: [coinType],
         arguments: [
           tx.object(REGISTRY_ID),
           tx.object(dropletAddress),
@@ -178,7 +204,26 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
         },
         onError: (error) => {
           console.error('Claim transaction failed:', error);
-          const errorMessage = handleTransactionError(error);
+          let errorMessage = handleTransactionError(error);
+          
+          // Provide specific messages for common claim errors
+          if (error?.message || error?.toString?.()) {
+            const errorStr = (error.message || error.toString()).toLowerCase();
+            if (errorStr.includes('already_claimed')) {
+              errorMessage = 'You have already claimed from this droplet';
+            } else if (errorStr.includes('droplet_expired')) {
+              errorMessage = 'This droplet has expired and is no longer available';
+            } else if (errorStr.includes('droplet_closed')) {
+              errorMessage = 'This droplet has been closed';
+            } else if (errorStr.includes('receiver_limit_reached')) {
+              errorMessage = 'All available claims for this droplet have been taken';
+            } else if (errorStr.includes('insufficient_balance')) {
+              errorMessage = 'This droplet has no remaining balance to claim';
+            } else if (errorStr.includes('droplet_not_found')) {
+              errorMessage = 'Droplet not found. Please check the droplet ID';
+            }
+          }
+          
           toast({
             title: "Claim Failed",
             description: errorMessage,

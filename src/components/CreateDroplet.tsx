@@ -291,15 +291,26 @@ export function CreateDroplet() {
             if (result?.events && Array.isArray(result.events)) {
               for (const event of result.events) {
                 console.log('Checking event:', event.type, event.parsedJson);
-                if (event.type && (
-                  event.type.includes('DropletCreated') || 
-                  event.type.includes('droplet_created') ||
-                  event.type.includes('Created')
-                )) {
+                if (event.type && event.type.includes('::DropletCreated')) {
                   const parsedJson = event.parsedJson;
                   if (parsedJson && parsedJson.droplet_id) {
                     createdDropletId = parsedJson.droplet_id;
                     console.log('Found emitted droplet ID:', createdDropletId);
+                    break;
+                  }
+                }
+              }
+            }
+            
+            // Alternative: Check effects events if main events don't work
+            if (!createdDropletId && result?.effects?.events && Array.isArray(result.effects.events)) {
+              for (const event of result.effects.events) {
+                console.log('Checking effects event:', event.type, event.parsedJson);
+                if (event.type && event.type.includes('::DropletCreated')) {
+                  const parsedJson = event.parsedJson;
+                  if (parsedJson && parsedJson.droplet_id) {
+                    createdDropletId = parsedJson.droplet_id;
+                    console.log('Found emitted droplet ID from effects:', createdDropletId);
                     break;
                   }
                 }
