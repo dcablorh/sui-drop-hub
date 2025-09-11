@@ -9,7 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const { networkConfig } = createNetworkConfig({
-  devnet: { url: getFullnodeUrl('devnet') },
+  testnet: { url: getFullnodeUrl('testnet') },
   mainnet: { url: getFullnodeUrl('mainnet') },
 });
 
@@ -17,14 +17,20 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
-      <WalletProvider>
+    <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
+      <WalletProvider  autoConnect={true}
+              slushWallet={{
+                name: "Sui-drop",//dapp name 
+        }}
+      >
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
-            <Route path="/" element={<Index />} />
+              <Route path="/" element={<Index />} />
+             
+              
             <Route path="/claim/:dropletId" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
