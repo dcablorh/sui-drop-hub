@@ -4,16 +4,16 @@ import { useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
-import { CleanupDroplet } from '@/components/CleanupDroplet';
+
 import { QRScanner } from '@/components/QRScanner';
-import { PlatformStats } from '@/components/PlatformStats';
+
 import { UserDashboard } from '@/components/UserDashboard';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Send, Gift, TrendingUp, Star, Zap, Shield, Clock, QrCode, User, Settings } from 'lucide-react';
+import { Send, Gift, Star, Zap, Shield, Clock, QrCode, User, Settings } from 'lucide-react';
 
 const ADMIN_ADDRESS = '0xe2bf986ccb385f8e5d9500ce8332b69a5cee19579152c240c09213e80e9355b8';
 
@@ -58,7 +58,7 @@ const Index = () => {
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'} bg-secondary/50 border border-border/50`}>
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} bg-secondary/50 border border-border/50`}>
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Create
@@ -71,18 +71,6 @@ const Index = () => {
                 <User className="h-4 w-4" />
                 Dashboard
               </TabsTrigger>
-              {isAdmin && (
-                <>
-                  <TabsTrigger value="stats" className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Stats
-                  </TabsTrigger>
-                  <TabsTrigger value="admin" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Admin
-                  </TabsTrigger>
-                </>
-              )}
             </TabsList>
             
             <TabsContent value="create" className="space-y-0">
@@ -102,7 +90,6 @@ const Index = () => {
                     
                   </div>
                 </div>
-                <CleanupDroplet />
               </div>
             </TabsContent>
             
@@ -113,20 +100,12 @@ const Index = () => {
             </TabsContent>
             
             {isAdmin && (
-              <>
-                <TabsContent value="stats" className="space-y-0">
-                  <div className="max-w-2xl mx-auto">
-                    <PlatformStats />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="admin" className="space-y-0">
-                  <div className="flex justify-center">
-                    <AdminDashboard />
-                  </div>
-                </TabsContent>
-              </>
-            )}
+               <TabsContent value="admin" className="space-y-0">
+                 <div className="flex justify-center">
+                   <AdminDashboard />
+                 </div>
+               </TabsContent>
+             )}
           </Tabs>
         </div>
       </section>
