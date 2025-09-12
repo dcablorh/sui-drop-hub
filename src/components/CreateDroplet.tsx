@@ -283,23 +283,43 @@ export function CreateDroplet() {
         onSuccess: (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // Extract 6-character droplet ID from transaction events
+          // Extract exact droplet ID from blockchain events
           let createdDropletId = '';
           
           try {
-            // Primary method: Check events for the actual emitted droplet_id
+            console.log('Full transaction result:', result);
+            
+            // Check transaction events for DropletCreated event
             if (result?.events && Array.isArray(result.events)) {
+              console.log('Found events array with', result.events.length, 'events');
               for (const event of result.events) {
-                console.log('Checking event:', event.type, event.parsedJson);
-                if (event.type && (
-                  event.type.includes('DropletCreated') || 
-                  event.type.includes('droplet_created') ||
-                  event.type.includes('Created')
-                )) {
-                  const parsedJson = event.parsedJson;
-                  if (parsedJson && parsedJson.droplet_id) {
-                    createdDropletId = parsedJson.droplet_id;
-                    console.log('Found emitted droplet ID:', createdDropletId);
+                console.log('Event type:', event.type);
+                console.log('Event parsedJson:', event.parsedJson);
+                
+                // Look for the exact DropletCreated event from our smart contract
+                if (event.type && event.type.includes('::DropletCreated')) {
+                  const eventData = event.parsedJson;
+                  if (eventData && eventData.droplet_id) {
+                    createdDropletId = eventData.droplet_id;
+                    console.log('✅ Extracted droplet ID from DropletCreated event:', createdDropletId);
+                    break;
+                  }
+                }
+              }
+            }
+            
+            // Also check effects.events as fallback
+            if (!createdDropletId && result?.effects?.events && Array.isArray(result.effects.events)) {
+              console.log('Checking effects.events array with', result.effects.events.length, 'events');
+              for (const event of result.effects.events) {
+                console.log('Effects event type:', event.type);
+                console.log('Effects event parsedJson:', event.parsedJson);
+                
+                if (event.type && event.type.includes('::DropletCreated')) {
+                  const eventData = event.parsedJson;
+                  if (eventData && eventData.droplet_id) {
+                    createdDropletId = eventData.droplet_id;
+                    console.log('✅ Extracted droplet ID from effects DropletCreated event:', createdDropletId);
                     break;
                   }
                 }

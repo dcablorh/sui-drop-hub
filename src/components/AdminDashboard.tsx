@@ -301,55 +301,61 @@ export function AdminDashboard() {
         </GradientCard>
       </div>
 
-      {/* Additional Admin Stats */}
+      {/* Admin Statistics - Real-time from Contract */}
       {adminStats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <GradientCard>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                  <Package className="h-5 w-5 text-primary-foreground" />
+        <GradientCard variant="glow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Platform Statistics
+            </CardTitle>
+            <CardDescription>
+              Live data from the smart contract registry
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center space-y-2">
+                <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
+                  <Package className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Droplets</p>
-                  <p className="text-2xl font-bold">{adminStats.totalDroplets.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Total Droplets Created</p>
+                  <p className="text-3xl font-bold text-primary">{adminStats.totalDroplets.toLocaleString()}</p>
+                  <Badge variant="secondary" className="mt-1">Live from Registry</Badge>
                 </div>
               </div>
-            </CardContent>
-          </GradientCard>
 
-          <GradientCard>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                  <Percent className="h-5 w-5 text-primary-foreground" />
+              <div className="text-center space-y-2">
+                <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
+                  <Percent className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Current Fee</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-sm text-muted-foreground">Platform Fee</p>
+                  <p className="text-3xl font-bold text-primary">
                     {(adminStats.currentFeePercentage / 100).toFixed(1)}%
                   </p>
+                  <Badge variant="secondary" className="mt-1">
+                    {adminStats.currentFeePercentage} basis points
+                  </Badge>
                 </div>
               </div>
-            </CardContent>
-          </GradientCard>
 
-          <GradientCard>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                  <Coins className="h-5 w-5 text-primary-foreground" />
+              <div className="text-center space-y-2">
+                <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center mx-auto">
+                  <Coins className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Fees Collected</p>
-                  <p className="text-2xl font-bold">
-                    {adminStats.totalFeesCollected.SUI || 0} SUI
+                  <p className="text-3xl font-bold text-primary">
+                    {adminStats.totalFeesCollected.SUI || 0}
                   </p>
+                  <Badge variant="secondary" className="mt-1">SUI Tokens</Badge>
                 </div>
               </div>
-            </CardContent>
-          </GradientCard>
-        </div>
+            </div>
+          </CardContent>
+        </GradientCard>
       )}
     </div>
   );

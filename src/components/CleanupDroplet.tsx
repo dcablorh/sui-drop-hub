@@ -202,5 +202,63 @@ export function CleanupDroplet() {
     }
   };
 
-  //
+  return (
+    <GradientCard className="w-full">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <RefreshCw className="h-5 w-5 text-primary" />
+          <CardTitle>Cleanup Expired Droplet</CardTitle>
+        </div>
+        <CardDescription>
+          Refund remaining tokens from expired droplets back to the creator
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="droplet-id" className="flex items-center gap-2">
+            <Hash className="h-4 w-4" />
+            Droplet ID
+          </Label>
+          <Input
+            id="droplet-id"
+            placeholder="Enter 6-character droplet ID (e.g., ABC123)"
+            value={dropletId}
+            onChange={(e) => setDropletId(e.target.value.toUpperCase())}
+            maxLength={6}
+            className={error ? 'border-destructive' : ''}
+          />
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+        </div>
+
+        <Button
+          onClick={handleCleanup}
+          disabled={loading || !dropletId || !currentAccount}
+          className="w-full"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Processing Cleanup...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Cleanup Expired Droplet
+            </>
+          )}
+        </Button>
+
+        <div className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
+          <p className="font-medium mb-1">How it works:</p>
+          <ul className="space-y-1 list-disc list-inside">
+            <li>Only expired droplets can be cleaned up</li>
+            <li>Any remaining tokens are refunded to the droplet creator</li>
+            <li>Anyone can trigger cleanup for expired droplets</li>
+          </ul>
+        </div>
+      </CardContent>
+    </GradientCard>
+  );
 }
