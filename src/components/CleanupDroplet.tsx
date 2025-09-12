@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
 import { RefreshCw, Hash } from 'lucide-react';
 
-export function CleanupDroplet() {
+export const CleanupDroplet = () => {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { toast } = useToast();

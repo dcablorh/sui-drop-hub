@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
+import { CleanupDroplet } from '@/components/CleanupDroplet';
 
 import { QRScanner } from '@/components/QRScanner';
 
@@ -58,7 +59,7 @@ const Index = () => {
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} bg-secondary/50 border border-border/50`}>
+            <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} bg-secondary/50 border border-border/50 max-w-2xl mx-auto`}>
               <TabsTrigger value="create" className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Create
@@ -74,28 +75,41 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="create" className="space-y-0">
-              <div className="flex justify-center">
-                <CreateDroplet />
+              <div className="flex justify-center px-2">
+                <div className="w-full max-w-2xl">
+                  <CreateDroplet />
+                </div>
               </div>
             </TabsContent>
             
             <TabsContent value="claim" className="space-y-6">
-              <div className="flex flex-col items-center space-y-6">
-                <ClaimDroplet prefilledDropletId={prefilledDropletId} />
-                <div className="w-full max-w-lg">
+              <div className="flex flex-col items-center space-y-6 px-2">
+                <div className="w-full max-w-2xl">
+                  <ClaimDroplet prefilledDropletId={prefilledDropletId} />
+                </div>
+                <div className="w-full max-w-2xl">
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
-                    
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        or clean up expired droplets
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <CleanupDroplet />
                   </div>
                 </div>
               </div>
             </TabsContent>
             
             <TabsContent value="dashboard" className="space-y-0">
-              <div className="flex justify-center">
-                <UserDashboard />
+              <div className="flex justify-center px-2">
+                <div className="w-full">
+                  <UserDashboard />
+                </div>
               </div>
             </TabsContent>
             
@@ -111,10 +125,10 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-16 border-t border-border/30">
+      <section className="container mx-auto px-4 py-8 sm:py-16 border-t border-border/30">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">How It Works</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <GradientCard>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -173,20 +187,20 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 border-t border-border/30">
-        <div className="text-center space-y-4">
+      <footer className="container mx-auto px-4 py-6 sm:py-8 border-t border-border/30">
+        <div className="text-center space-y-3 sm:space-y-4">
           <div className="flex items-center justify-center gap-2">
             <div className="h-6 w-6 rounded-lg bg-gradient-primary flex items-center justify-center">
               <Zap className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold">Sui Drop Hub</span>
+            <span className="font-semibold text-sm sm:text-base">Sui Drop Hub</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Built on Sui Network • Decentralized Airdrop Platform
           </p>
-          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-muted-foreground">
             <span>Network: Testnet</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span>Platform Fee: 1.3%</span>
           </div>
         </div>

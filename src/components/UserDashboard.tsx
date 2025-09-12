@@ -450,7 +450,7 @@ export function UserDashboard() {
        
 
       {/* Main Dashboard */}
-      <GradientCard variant="glow" className="w-full">
+      <GradientCard variant="glow" className="w-full max-w-4xl mx-auto">
         <CardHeader>
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">

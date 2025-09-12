@@ -283,7 +283,7 @@ export function CreateDroplet() {
         onSuccess: (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // Extract exact droplet ID from blockchain events
+          // Extract exact droplet ID from DropletCreated event ONLY
           let createdDropletId = '';
           
           try {
@@ -308,67 +308,44 @@ export function CreateDroplet() {
               }
             }
             
-            // Also check effects.events as fallback
-            if (!createdDropletId && result?.effects?.events && Array.isArray(result.effects.events)) {
-              console.log('Checking effects.events array with', result.effects.events.length, 'events');
-              for (const event of result.effects.events) {
-                console.log('Effects event type:', event.type);
-                console.log('Effects event parsedJson:', event.parsedJson);
-                
-                if (event.type && event.type.includes('::DropletCreated')) {
-                  const eventData = event.parsedJson;
-                  if (eventData && eventData.droplet_id) {
-                    createdDropletId = eventData.droplet_id;
-                    console.log('✅ Extracted droplet ID from effects DropletCreated event:', createdDropletId);
-                    break;
-                  }
-                }
-              }
-            }
-            
-            // Fallback: If no event found, use last 6 chars of created object
-            if (!createdDropletId && result?.effects?.created && Array.isArray(result.effects.created)) {
-              const createdObj = result.effects.created[0];
-              if (createdObj?.reference?.objectId) {
-                createdDropletId = createdObj.reference.objectId.slice(-6).toUpperCase();
-                console.log('Generated droplet ID from object:', createdDropletId);
-              }
-            }
-            
-            // Last resort: Generate random ID
             if (!createdDropletId) {
-              createdDropletId = generateDropletId();
-              console.log('Using fallback generated droplet ID:', createdDropletId);
+              // If we still don't have the droplet ID from DropletCreated event, fail
+              throw new Error('DropletCreated event not found or missing droplet_id');
             }
-            
-          } catch (error) {
-            console.error('Error extracting droplet ID:', error);
-            createdDropletId = generateDropletId();
-          }
-          
-          setCreatedDropletId(createdDropletId);
-          setShowSuccess(true);
-          
-          toast({
-            title: "🎉 Droplet Created Successfully!",
-            description: `Droplet ID: ${createdDropletId} - Share this ID to distribute your airdrop!`,
-          });
 
-          // Reset form
-          setFormData({
-            amount: '',
-            receiverLimit: '',
-            expiryHours: '48',
-            message: '',
-            selectedCoinType: '0x2::sui::SUI'
-          });
-          setFormErrors({
-            amount: '',
-            receiverLimit: '',
-            expiryHours: '',
-            message: '',
-            coinType: ''
-          });
+            // Get coin info for display
+            const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
+            const coinSymbol = selectedCoin?.symbol || formData.selectedCoinType.split('::').pop() || 'TOKEN';
+
+            // Set success state and show dialog
+            setCreatedDropletId(createdDropletId);
+            setShowSuccess(true);
+
+            toast({
+              title: "🎉 Airdrop Created Successfully!",
+              description: `Droplet ${createdDropletId} created successfully! Share this ID to distribute your airdrop.`,
+            });
+
+            // Reset form
+            setFormData({
+              amount: '',
+              receiverLimit: '',
+              expiryHours: '48',
+              message: '',
+              selectedCoinType: '0x2::sui::SUI'
+            });
+            setFormErrors({
+              amount: '',
+              receiverLimit: '',
+              expiryHours: '',
+              message: '',
+              coinType: ''
+            });
+            
+          } catch (parseError) {
+            console.error('Error parsing transaction result:', parseError);
+            throw parseError; // Re-throw to be caught by onError
+          }
         },
         onError: (error) => {
           console.error('Create droplet transaction failed:', error);
@@ -545,26 +522,31 @@ export function CreateDroplet() {
         {formData.amount && formData.receiverLimit && (
           <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-border/30">
             <h4 className="font-medium text-sm">Airdrop Summary</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform Fee:</span>
-                <Badge variant="outline" className="text-sui-yellow">
-                  {estimatedFee.toFixed(3)} SUI
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Net Amount:</span>
-                <Badge variant="outline" className="text-sui-green">
-                  {netAmount.toFixed(3)} SUI
-                </Badge>
-              </div>
-              <div className="flex justify-between col-span-2">
-                <span className="text-muted-foreground">Per User:</span>
-                <Badge variant="outline" className="text-primary">
-                  {amountPerUser.toFixed(6)} SUI
-                </Badge>
-              </div>
-            </div>
+            {(() => {
+              const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
+              return (
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Platform Fee:</span>
+                    <Badge variant="outline" className="text-sui-yellow">
+                      {estimatedFee.toFixed(3)} {selectedCoin?.symbol || 'TOKEN'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Net Amount:</span>
+                    <Badge variant="outline" className="text-sui-green">
+                      {netAmount.toFixed(3)} {selectedCoin?.symbol || 'TOKEN'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between col-span-2">
+                    <span className="text-muted-foreground">Per User:</span>
+                    <Badge variant="outline" className="text-primary">
+                      {amountPerUser.toFixed(6)} {selectedCoin?.symbol || 'TOKEN'}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
