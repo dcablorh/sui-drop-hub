@@ -41,90 +41,6 @@ export function CreateDroplet() {
     coinType: ''
   });
 
-  // Function to generate 6-character droplet ID
-  const generateDropletId = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
-  // Function to extract droplet ID from transaction
-  const extractDropletIdFromTransaction = (result: any) => {
-    console.log('Full transaction result:', result);
-    
-    // Method 1: Check events for droplet ID
-    if (result.events) {
-      console.log('Events found:', result.events);
-      for (const event of result.events) {
-        console.log('Event type:', event.type);
-        console.log('Event parsedJson:', event.parsedJson);
-        
-        // Check various possible event types
-        if (event.type && (
-          event.type.includes('DropletCreated') || 
-          event.type.includes('droplet_created') ||
-          event.type.includes('Created')
-        )) {
-          const parsedJson = event.parsedJson as any;
-          
-          // Try different possible field names
-          const possibleFields = [
-            'droplet_id',
-            'id', 
-            'dropletId',
-            'object_id',
-            'objectId'
-          ];
-          
-          for (const field of possibleFields) {
-            if (parsedJson && parsedJson[field]) {
-              let extractedId = parsedJson[field];
-              console.log(`Found ${field}:`, extractedId);
-              
-              // If it's a full object ID, take last 6 chars
-              if (typeof extractedId === 'string' && extractedId.length > 6) {
-                extractedId = extractedId.slice(-6).toUpperCase();
-              }
-              
-              return extractedId;
-            }
-          }
-        }
-      }
-    }
-
-    // Method 2: Check created objects
-    if (result.effects?.created) {
-      console.log('Created objects:', result.effects.created);
-      for (const created of result.effects.created) {
-        if (created.reference?.objectId) {
-          const objectId = created.reference.objectId;
-          console.log('Created object ID:', objectId);
-          // Use last 6 characters of object ID
-          return objectId.slice(-6).toUpperCase();
-        }
-      }
-    }
-
-    // Method 3: Check objectChanges
-    if (result.objectChanges) {
-      console.log('Object changes:', result.objectChanges);
-      for (const change of result.objectChanges) {
-        if (change.type === 'created' && change.objectId) {
-          console.log('Created object from changes:', change.objectId);
-          return change.objectId.slice(-6).toUpperCase();
-        }
-      }
-    }
-
-    // Fallback: generate random ID
-    console.log('No droplet ID found in transaction, generating fallback ID');
-    return generateDropletId();
-  };
-
   // Validation functions
   const validateForm = () => {
     const errors = {
@@ -280,37 +196,39 @@ export function CreateDroplet() {
       signAndExecuteTransaction({ 
         transaction: tx,
       }, {
-        onSuccess: (result: any) => {
+        onSuccess: (result) => {
           console.log('Create droplet transaction completed successfully:', result);
           
-          // Extract exact droplet ID from DropletCreated event ONLY
+          // Extract droplet ID from DropletCreated event
           let createdDropletId = '';
           
           try {
-            console.log('Full transaction result:', result);
-            
-            // Check transaction events for DropletCreated event
-            if (result?.events && Array.isArray(result.events)) {
-              console.log('Found events array with', result.events.length, 'events');
-              for (const event of result.events) {
-                console.log('Event type:', event.type);
-                console.log('Event parsedJson:', event.parsedJson);
-                
-                // Look for the exact DropletCreated event from our smart contract
-                if (event.type && event.type.includes('::DropletCreated')) {
-                  const eventData = event.parsedJson;
-                  if (eventData && eventData.droplet_id) {
-                    createdDropletId = eventData.droplet_id;
-                    console.log('✅ Extracted droplet ID from DropletCreated event:', createdDropletId);
-                    break;
-                  }
+            // First check transaction events
+            const allEvents = [
+              ...(result?.events || []),
+              ...(result?.effects?.events || [])
+            ];
+
+            console.log('Searching through', allEvents.length, 'events for DropletCreated');
+
+            for (const event of allEvents) {
+              console.log('Event type:', event.type);
+              console.log('Event parsedJson:', event.parsedJson);
+              
+              // Look for the DropletCreated event from our smart contract
+              if (event.type && event.type.includes('DropletCreated')) {
+                const eventData = event.parsedJson;
+                if (eventData && eventData.droplet_id) {
+                  createdDropletId = eventData.droplet_id;
+                  console.log('✅ Found droplet ID in DropletCreated event:', createdDropletId);
+                  break;
                 }
               }
             }
             
             if (!createdDropletId) {
-              // If we still don't have the droplet ID from DropletCreated event, fail
-              throw new Error('DropletCreated event not found or missing droplet_id');
+              console.error('DropletCreated event not found or missing droplet_id field');
+              throw new Error('Failed to extract droplet ID from transaction events');
             }
 
             // Get coin info for display
@@ -323,7 +241,7 @@ export function CreateDroplet() {
 
             toast({
               title: "🎉 Airdrop Created Successfully!",
-              description: `Droplet ${createdDropletId} created successfully! Share this ID to distribute your airdrop.`,
+              description: `Droplet ${createdDropletId} created! Share this ID to distribute your airdrop.`,
             });
 
             // Reset form
@@ -344,7 +262,12 @@ export function CreateDroplet() {
             
           } catch (parseError) {
             console.error('Error parsing transaction result:', parseError);
-            throw parseError; // Re-throw to be caught by onError
+            // Show success but with a warning about ID extraction
+            toast({
+              title: "Airdrop Created",
+              description: "Your airdrop was created successfully, but we couldn't extract the droplet ID. Check your dashboard for the created droplet.",
+              variant: "destructive",
+            });
           }
         },
         onError: (error) => {
