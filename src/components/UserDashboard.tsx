@@ -443,60 +443,11 @@ export function UserDashboard() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      {/* User Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GradientCard>
-          <CardContent className="flex items-center space-x-4 p-6">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Send className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Created</p>
-              <p className="text-2xl font-bold">{userStats.createdCount}</p>
-            </div>
-          </CardContent>
-        </GradientCard>
+     
+        
+        
 
-        <GradientCard>
-          <CardContent className="flex items-center space-x-4 p-6">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Gift className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Claimed</p>
-              <p className="text-2xl font-bold">{userStats.claimedCount}</p>
-            </div>
-          </CardContent>
-        </GradientCard>
-
-        <GradientCard>
-          <CardContent className="flex items-center space-x-4 p-6">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Active</p>
-              <p className="text-2xl font-bold">
-                {createdDetails.filter(d => !d.isExpired && !d.isClosed && d.numClaimed < d.receiverLimit).length}
-              </p>
-            </div>
-          </CardContent>
-        </GradientCard>
-
-        <GradientCard>
-          <CardContent className="flex items-center space-x-4 p-6">
-            <div className="h-12 w-12 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Expired</p>
-              <p className="text-2xl font-bold">
-                {createdDetails.filter(d => d.isExpired && !d.isClosed).length}
-              </p>
-            </div>
-          </CardContent>
-        </GradientCard>
-      </div>
+       
 
       {/* Main Dashboard */}
       <GradientCard variant="glow" className="w-full">

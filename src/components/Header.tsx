@@ -14,9 +14,7 @@ export function Header() {
               <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Sui Drop Hub
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Airdrop Platform on Sui Network
-              </p>
+              
             </div>
           </div>
           <WalletConnection />
