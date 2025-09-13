@@ -92,15 +92,9 @@ const Index = () => {
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        or clean up expired droplets
-                      </span>
-                    </div>
+                    
                   </div>
-                  <div className="mt-6">
-                    <CleanupDroplet />
-                  </div>
+                  
                 </div>
               </div>
             </TabsContent>

@@ -41,7 +41,63 @@ export function CreateDroplet() {
     coinType: ''
   });
 
-  // Validation functions
+  // Function to generate 6-character droplet ID
+  const generateDropletId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
+  // Function to extract droplet ID from transaction result
+// Function to get transaction details with properly decoded events
+const getTransactionDetails = async (digest: string) => {
+  try {
+    const txDetails = await suiClient.getTransactionBlock({
+      digest,
+      options: { showEvents: true }
+    });
+    return txDetails;
+  } catch (err) {
+    console.error('Error fetching transaction details:', err);
+    return null;
+  }
+};
+
+const extractDropletIdFromTransaction = async (result: any) => {
+  // First try from immediate response
+  const checkEvents = (events: any[]) => {
+    for (const event of events || []) {
+      if (
+        typeof event.type === 'string' &&
+        event.type.endsWith(`::${MODULE}::DropletCreated`)
+      ) {
+        const dropletId = event.parsedJson?.droplet_id;
+        if (typeof dropletId === 'string' && dropletId.length === 6) {
+          return dropletId;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Try immediate events first
+  let dropletId = checkEvents(result.events);
+  if (dropletId) return dropletId;
+
+  // If not found and we have a digest, fetch full transaction details
+  if (result.digest) {
+    const txDetails = await getTransactionDetails(result.digest);
+    if (txDetails?.events) {
+      dropletId = checkEvents(txDetails.events);
+      if (dropletId) return dropletId;
+    }
+  }
+
+  return null;
+};  // Validation functions
   const validateForm = () => {
     const errors = {
       amount: '',
@@ -196,52 +252,30 @@ export function CreateDroplet() {
       signAndExecuteTransaction({ 
         transaction: tx,
       }, {
-        onSuccess: (result) => {
+        onSuccess: async (result: any) => {
           console.log('Create droplet transaction completed successfully:', result);
-          
-          // Extract droplet ID from DropletCreated event
-          let createdDropletId = '';
-          
           try {
-            // First check transaction events
-            const allEvents = [
-              ...(result?.events || []),
-              ...(result?.effects?.events || [])
-            ];
-
-            console.log('Searching through', allEvents.length, 'events for DropletCreated');
-
-            for (const event of allEvents) {
-              console.log('Event type:', event.type);
-              console.log('Event parsedJson:', event.parsedJson);
-              
-              // Look for the DropletCreated event from our smart contract
-              if (event.type && event.type.includes('DropletCreated')) {
-                const eventData = event.parsedJson;
-                if (eventData && eventData.droplet_id) {
-                  createdDropletId = eventData.droplet_id;
-                  console.log('✅ Found droplet ID in DropletCreated event:', createdDropletId);
-                  break;
-                }
-              }
-            }
+            const extracted = await extractDropletIdFromTransaction(result);
             
-            if (!createdDropletId) {
-              console.error('DropletCreated event not found or missing droplet_id field');
-              throw new Error('Failed to extract droplet ID from transaction events');
+            if (!extracted) {
+              console.error('DropletCreated event missing or droplet_id not present');
+              console.log('Transaction result:', result);
+              toast({
+                title: 'Droplet Created, but ID missing',
+                description: 'Transaction succeeded but droplet ID could not be extracted from events.',
+                variant: 'destructive'
+              });
+              return;
             }
 
-            // Get coin info for display
-            const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
-            const coinSymbol = selectedCoin?.symbol || formData.selectedCoinType.split('::').pop() || 'TOKEN';
-
-            // Set success state and show dialog
-            setCreatedDropletId(createdDropletId);
+            // Ensure exactly 6-char uppercase ID
+            const createdId = String(extracted).toUpperCase().slice(-6);
+            setCreatedDropletId(createdId);
             setShowSuccess(true);
 
             toast({
               title: "🎉 Airdrop Created Successfully!",
-              description: `Droplet ${createdDropletId} created! Share this ID to distribute your airdrop.`,
+              description: `Droplet ${createdId} created successfully! Share this ID to distribute your airdrop.`,
             });
 
             // Reset form
@@ -259,14 +293,12 @@ export function CreateDroplet() {
               message: '',
               coinType: ''
             });
-            
-          } catch (parseError) {
-            console.error('Error parsing transaction result:', parseError);
-            // Show success but with a warning about ID extraction
+          } catch (err) {
+            console.error('Error handling success result:', err);
             toast({
-              title: "Airdrop Created",
-              description: "Your airdrop was created successfully, but we couldn't extract the droplet ID. Check your dashboard for the created droplet.",
-              variant: "destructive",
+              title: 'Error parsing transaction result',
+              description: String(err || 'Unknown error'),
+              variant: 'destructive'
             });
           }
         },
