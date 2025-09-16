@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Liquid chrome background animation fallback */
+@keyframes liquidFlow {
+  0%, 100% { 
+    background-position: 0% 50%; 
+    transform: scale(1) rotate(0deg);
+  }
+  25% { 
+    background-position: 100% 50%; 
+    transform: scale(1.05) rotate(1deg);
+  }
+  50% { 
+    background-position: 100% 100%; 
+    transform: scale(1.1) rotate(0deg);
+  }
+  75% { 
+    background-position: 0% 100%; 
+    transform: scale(1.05) rotate(-1deg);
+  }
+}
+
+@keyframes chromeShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.liquid-chrome-bg {
+  background: linear-gradient(
+    45deg,
+    #0f172a 0%,
+    #1e293b 15%,
+    #334155 30%,
+    #475569 45%,
+    #64748b 60%,
+    #334155 75%,
+    #1e293b 90%,
+    #0f172a 100%
+  );
+  background-size: 400% 400%;
+  animation: liquidFlow 20s ease-in-out infinite;
+}
+
+.chrome-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: chromeShimmer 3s ease-in-out infinite;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
-import { Button } from '@/components/ui/button';
+import { GlassButton } from '@/components/ui/glass-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -347,10 +347,10 @@ const extractDropletIdFromTransaction = async (result: any) => {
   const amountPerUser = netAmount / (parseInt(formData.receiverLimit) || 1) || 0;
 
   return (
-    <GradientCard variant="glow" className="w-full max-w-lg">
+    <GlassCard variant="glow" className="w-full max-w-lg">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
             <Send className="h-4 w-4 text-primary-foreground" />
           </div>
           <CardTitle className="text-xl">Create Airdrop</CardTitle>
@@ -375,13 +375,13 @@ const extractDropletIdFromTransaction = async (result: any) => {
                 placeholder="10.5"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                className={`bg-secondary/50 border-border/50 focus:border-primary/50 flex-1 ${formErrors.amount ? 'border-destructive' : ''}`}
+                className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 flex-1 ${formErrors.amount ? 'border-red-400/50' : ''}`}
               />
               <Select
                 value={formData.selectedCoinType}
                 onValueChange={(value) => setFormData({ ...formData, selectedCoinType: value })}
               >
-                <SelectTrigger className="w-32 bg-secondary/50 border-border/50">
+                <SelectTrigger className="w-32 bg-white/10 backdrop-blur-[10px] border-white/30 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,7 +425,7 @@ const extractDropletIdFromTransaction = async (result: any) => {
               max="100000"
               value={formData.receiverLimit}
               onChange={(e) => setFormData({ ...formData, receiverLimit: e.target.value })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.receiverLimit ? 'border-destructive' : ''}`}
+              className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 ${formErrors.receiverLimit ? 'border-red-400/50' : ''}`}
             />
             {formErrors.receiverLimit && (
               <p className="text-sm text-destructive mt-1">{formErrors.receiverLimit}</p>
@@ -443,7 +443,7 @@ const extractDropletIdFromTransaction = async (result: any) => {
               min="1"
               value={formData.expiryHours}
               onChange={(e) => setFormData({ ...formData, expiryHours: e.target.value })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.expiryHours ? 'border-destructive' : ''}`}
+              className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 ${formErrors.expiryHours ? 'border-red-400/50' : ''}`}
             />
             {formErrors.expiryHours && (
               <p className="text-sm text-destructive mt-1">{formErrors.expiryHours}</p>
@@ -461,7 +461,7 @@ const extractDropletIdFromTransaction = async (result: any) => {
               maxLength={200}
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 min-h-20 ${formErrors.message ? 'border-destructive' : ''}`}
+              className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 min-h-20 ${formErrors.message ? 'border-red-400/50' : ''}`}
             />
             <div className="flex justify-between items-center mt-1">
               {formErrors.message && (
@@ -475,7 +475,7 @@ const extractDropletIdFromTransaction = async (result: any) => {
         </div>
 
         {formData.amount && formData.receiverLimit && (
-          <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-border/30">
+          <div className="space-y-3 p-4 rounded-lg bg-white/10 backdrop-blur-[10px] border border-white/20">
             <h4 className="font-medium text-sm">Airdrop Summary</h4>
             {(() => {
               const selectedCoin = coinBalances.find(coin => coin.coinType === formData.selectedCoinType);
@@ -483,19 +483,19 @@ const extractDropletIdFromTransaction = async (result: any) => {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Platform Fee:</span>
-                    <Badge variant="outline" className="text-sui-yellow">
+                    <Badge variant="outline" className="text-yellow-400 bg-yellow-400/20 border-yellow-400/30">
                       {estimatedFee.toFixed(3)} {selectedCoin?.symbol || 'TOKEN'}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Net Amount:</span>
-                    <Badge variant="outline" className="text-sui-green">
+                    <Badge variant="outline" className="text-green-400 bg-green-400/20 border-green-400/30">
                       {netAmount.toFixed(3)} {selectedCoin?.symbol || 'TOKEN'}
                     </Badge>
                   </div>
                   <div className="flex justify-between col-span-2">
                     <span className="text-muted-foreground">Per User:</span>
-                    <Badge variant="outline" className="text-primary">
+                    <Badge variant="outline" className="text-cyan-400 bg-cyan-400/20 border-cyan-400/30">
                       {amountPerUser.toFixed(6)} {selectedCoin?.symbol || 'TOKEN'}
                     </Badge>
                   </div>
@@ -505,13 +505,14 @@ const extractDropletIdFromTransaction = async (result: any) => {
           </div>
         )}
 
-        <Button
+        <GlassButton
           onClick={handleCreate}
           disabled={loading || !formData.amount || !formData.receiverLimit || !currentAccount}
-          className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow transition-all duration-300"
+          variant="neon"
+          className="w-full"
         >
           {loading ? 'Creating...' : 'Create Airdrop'}
-        </Button>
+        </GlassButton>
       </CardContent>
 
       {/* Success Dialog */}
@@ -540,22 +541,22 @@ const extractDropletIdFromTransaction = async (result: any) => {
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-2">
-              <Button
+              <GlassButton
                 onClick={() => copyToClipboard(createdDropletId)}
                 variant="outline"
                 size="sm"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy ID
-              </Button>
-              <Button
+              </GlassButton>
+              <GlassButton
                 onClick={() => copyToClipboard(`${window.location.origin}/claim/${createdDropletId}`)}
                 variant="outline"
                 size="sm"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy Link
-              </Button>
+              </GlassButton>
             </div>
 
             {/* QR Code */}
@@ -578,16 +579,16 @@ const extractDropletIdFromTransaction = async (result: any) => {
               </p>
             </div>
 
-            <Button 
+            <GlassButton 
               onClick={() => setShowSuccess(false)}
               className="w-full"
-              variant="default"
+              variant="primary"
             >
               Done
-            </Button>
+            </GlassButton>
           </div>
         </DialogContent>
       </Dialog>
-    </GradientCard>
+    </GlassCard>
   );
 }

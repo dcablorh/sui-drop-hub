@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { Button } from '@/components/ui/button';
+import { GlassButton } from '@/components/ui/glass-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { suiClient, REGISTRY_ID, PACKAGE_ID, MODULE, COIN_TYPE, CLOCK_ID, handleTransactionError } from '@/lib/suiClient';
@@ -246,10 +246,10 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
   };
 
   return (
-    <GradientCard variant="glow" className="w-full max-w-lg">
+    <GlassCard variant="glow" className="w-full max-w-lg">
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
             <Gift className="h-4 w-4 text-primary-foreground" />
           </div>
           <CardTitle className="text-xl">Claim Airdrop</CardTitle>
@@ -270,7 +270,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
               placeholder="A1B2C3"
               value={formData.dropletId}
               onChange={(e) => setFormData({ ...formData, dropletId: e.target.value.toUpperCase() })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 font-mono ${formErrors.dropletId ? 'border-destructive' : ''}`}
+              className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 font-mono ${formErrors.dropletId ? 'border-red-400/50' : ''}`}
               maxLength={6}
             />
             {formErrors.dropletId && (
@@ -289,7 +289,7 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
               maxLength={50}
               value={formData.claimerName}
               onChange={(e) => setFormData({ ...formData, claimerName: e.target.value })}
-              className={`bg-secondary/50 border-border/50 focus:border-primary/50 ${formErrors.claimerName ? 'border-destructive' : ''}`}
+              className={`bg-white/10 backdrop-blur-[10px] border-white/30 focus:border-cyan-400/50 text-white placeholder:text-white/60 ${formErrors.claimerName ? 'border-red-400/50' : ''}`}
             />
             <div className="flex justify-between items-center mt-1">
               {formErrors.claimerName && (
@@ -302,14 +302,15 @@ export function ClaimDroplet({ prefilledDropletId = '' }: ClaimDropletProps) {
           </div>
         </div>
 
-        <Button
+        <GlassButton
           onClick={handleClaim}
           disabled={loading || !formData.dropletId || !formData.claimerName || !currentAccount}
-          className="w-full bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow transition-all duration-300"
+          variant="neon"
+          className="w-full"
         >
           {loading ? 'Claiming...' : 'Claim Airdrop'}
-        </Button>
+        </GlassButton>
       </CardContent>
-    </GradientCard>
+    </GlassCard>
   );
 }

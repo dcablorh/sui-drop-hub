@@ -5,18 +5,19 @@ import { Header } from '@/components/Header';
 import { CreateDroplet } from '@/components/CreateDroplet';
 import { ClaimDroplet } from '@/components/ClaimDroplet';
 import { CleanupDroplet } from '@/components/CleanupDroplet';
+import { LiquidBackground } from '@/components/ui/liquid-background';
 
 import { QRScanner } from '@/components/QRScanner';
 
 import { UserDashboard } from '@/components/UserDashboard';
 import { AdminDashboard } from '@/components/AdminDashboard';
-import { GradientCard } from '@/components/ui/gradient-card';
+import { GlassCard } from '@/components/ui/glass-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Send, Gift, Star, Zap, Shield, Clock, QrCode, User, Settings, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
+import { GlassButton } from '@/components/ui/glass-button';
 
 const ADMIN_ADDRESS = '0xe2bf986ccb385f8e5d9500ce8332b69a5cee19579152c240c09213e80e9355b8';
 
@@ -53,6 +54,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <LiquidBackground />
       <Header />
       
       
@@ -131,14 +133,14 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full flex items-center justify-between p-4 text-lg font-semibold hover:bg-secondary/50">
+              <GlassButton variant="ghost" className="w-full flex items-center justify-between p-4 text-lg font-semibold">
                 <span>How It Works</span>
                 <ChevronDown className="h-5 w-5 transition-transform duration-200" />
-              </Button>
+              </GlassButton>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-6 pt-4 pb-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GradientCard>
+                <GlassCard variant="frosted">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Send className="h-5 w-5 text-primary" />
@@ -163,9 +165,9 @@ const Index = () => {
                       <p className="text-sm">Share the 6-character ID</p>
                     </div>
                   </CardContent>
-                </GradientCard>
+                </GlassCard>
 
-                <GradientCard>
+                <GlassCard variant="frosted">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Gift className="h-5 w-5 text-primary" />
@@ -190,7 +192,7 @@ const Index = () => {
                       <p className="text-sm">Claim instantly</p>
                     </div>
                   </CardContent>
-                </GradientCard>
+                </GlassCard>
               </div>
             </CollapsibleContent>
           </Collapsible>
