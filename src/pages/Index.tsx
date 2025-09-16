@@ -14,7 +14,9 @@ import { GradientCard } from '@/components/ui/gradient-card';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Send, Gift, Star, Zap, Shield, Clock, QrCode, User, Settings } from 'lucide-react';
+import { Send, Gift, Star, Zap, Shield, Clock, QrCode, User, Settings, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 const ADMIN_ADDRESS = '0xe2bf986ccb385f8e5d9500ce8332b69a5cee19579152c240c09213e80e9355b8';
 
@@ -72,6 +74,12 @@ const Index = () => {
                 <User className="h-4 w-4" />
                 Dashboard
               </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="admin" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Admin
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="create" className="space-y-0">
@@ -119,64 +127,73 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-8 sm:py-16 border-t border-border/30">
+      <section className="container mx-auto px-4 py-4 border-t border-border/30">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">How It Works</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <GradientCard>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5 text-primary" />
-                  Creating Airdrops
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">1</Badge>
-                  <p className="text-sm">Connect your Sui wallet to the platform</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">2</Badge>
-                  <p className="text-sm">Set amount, recipients limit, and expiry time</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">3</Badge>
-                  <p className="text-sm">Add an optional message for recipients</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">4</Badge>
-                  <p className="text-sm">Share the generated 6-character droplet ID</p>
-                </div>
-              </CardContent>
-            </GradientCard>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full flex items-center justify-between p-4 text-lg font-semibold hover:bg-secondary/50">
+                <span>How It Works</span>
+                <ChevronDown className="h-5 w-5 transition-transform duration-200" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-6 pt-4 pb-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <GradientCard>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Send className="h-5 w-5 text-primary" />
+                      Creating Airdrops
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">1</Badge>
+                      <p className="text-sm">Connect your Sui wallet</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">2</Badge>
+                      <p className="text-sm">Set amount, recipients, and expiry</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">3</Badge>
+                      <p className="text-sm">Add optional message</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">4</Badge>
+                      <p className="text-sm">Share the 6-character ID</p>
+                    </div>
+                  </CardContent>
+                </GradientCard>
 
-            <GradientCard>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  Claiming Airdrops
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">1</Badge>
-                  <p className="text-sm">Get the droplet ID from the airdrop creator</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">2</Badge>
-                  <p className="text-sm">Connect your Sui wallet to the platform</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">3</Badge>
-                  <p className="text-sm">Enter the droplet ID and your name</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">4</Badge>
-                  <p className="text-sm">Claim your tokens instantly</p>
-                </div>
-              </CardContent>
-            </GradientCard>
-          </div>
+                <GradientCard>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Gift className="h-5 w-5 text-primary" />
+                      Claiming Airdrops
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">1</Badge>
+                      <p className="text-sm">Get the droplet ID</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">2</Badge>
+                      <p className="text-sm">Connect your wallet</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">3</Badge>
+                      <p className="text-sm">Enter ID and name</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge variant="outline" className="mt-1 text-xs">4</Badge>
+                      <p className="text-sm">Claim instantly</p>
+                    </div>
+                  </CardContent>
+                </GradientCard>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       </section>
 

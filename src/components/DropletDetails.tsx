@@ -41,6 +41,9 @@ interface DropletInfo {
   message: string;
   claimers: string[];
   claimerNames: string[];
+  coinType: string;
+  coinSymbol: string;
+  decimals: number;
 }
 
 export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
@@ -96,7 +99,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
       // Get droplet object
       const dropletObject = await suiClient.getObject({
         id: dropletAddress,
-        options: { showContent: true }
+        options: { showContent: true, showType: true }
       });
 
       if (!dropletObject.data?.content || dropletObject.data.content.dataType !== 'moveObject') {
@@ -104,6 +107,11 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
       }
 
       const fields = (dropletObject.data.content as any).fields;
+      
+      // Extract coin type from the object type
+      const coinType = dropletObject.data.type?.match(/<(.+)>/)?.[1] || '0x2::sui::SUI';
+      const coinSymbol = coinType === '0x2::sui::SUI' ? 'SUI' : coinType.split('::').pop();
+      const decimals = coinType === '0x2::sui::SUI' ? 9 : 9; // Default to 9 decimals
 
       // Get droplet info
       const infoResult = await suiClient.devInspectTransactionBlock({
@@ -111,7 +119,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
           const tx = new TransactionBlock();
           tx.moveCall({
             target: `${PACKAGE_ID}::${MODULE}::get_droplet_info`,
-            typeArguments: ['0x2::sui::SUI'],
+            typeArguments: [coinType],
             arguments: [tx.object(dropletAddress), tx.object(CLOCK_ID)],
           });
           return tx;
@@ -137,6 +145,9 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
           message: fields.message,
           claimers: fields.claimers_list || [],
           claimerNames: fields.claimer_names || [],
+          coinType: coinType,
+          coinSymbol: coinSymbol,
+          decimals: decimals
         };
 
         setDropletInfo(info);
@@ -148,7 +159,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
               const tx = new TransactionBlock();
               tx.moveCall({
                 target: `${PACKAGE_ID}::${MODULE}::has_claimed`,
-                typeArguments: ['0x2::sui::SUI'],
+                typeArguments: [coinType],
                 arguments: [tx.object(dropletAddress), tx.pure.address(currentAccount.address)],
               });
               return tx;
@@ -313,12 +324,12 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Total Amount</label>
-                <p className="text-lg font-semibold">{(dropletInfo.totalAmount / 1e9).toFixed(4)} SUI</p>
+                <p className="text-lg font-semibold">{(dropletInfo.totalAmount / Math.pow(10, dropletInfo.decimals)).toFixed(4)} {dropletInfo.coinSymbol}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Remaining</label>
                 <p className="text-lg font-semibold text-sui-green">
-                  {(dropletInfo.remainingAmount / 1e9).toFixed(4)} SUI
+                  {(dropletInfo.remainingAmount / Math.pow(10, dropletInfo.decimals)).toFixed(4)} {dropletInfo.coinSymbol}
                 </p>
               </div>
             </div>
@@ -375,7 +386,7 @@ export function DropletDetails({ dropletId, onClose }: DropletDetailsProps) {
                     </div>
                   </div>
                   <div className="text-sm font-medium text-sui-green">
-                    {((dropletInfo.totalAmount / dropletInfo.receiverLimit) / 1e9).toFixed(4)} SUI
+                    {((dropletInfo.totalAmount / dropletInfo.receiverLimit) / Math.pow(10, dropletInfo.decimals)).toFixed(4)} {dropletInfo.coinSymbol}
                   </div>
                 </div>
               ))}
