@@ -351,6 +351,7 @@ const extractDropletIdFromTransaction = async (result: any) => {
       <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#3890FF] to-[#1E70D6] flex items-center justify-center shadow-[0_0_15px_rgba(56,144,255,0.4)]">
             <Send className="h-4 w-4 text-primary-foreground" />
           </div>
           <CardTitle className="text-xl">Create Airdrop</CardTitle>

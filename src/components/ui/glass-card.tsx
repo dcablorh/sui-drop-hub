@@ -25,7 +25,7 @@ export function GlassCard({
         "rounded-xl border border-white/20 shadow-xl transition-all duration-300",
         intensityClasses[intensity],
         {
-          "hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] hover:border-cyan-400/40 hover:scale-[1.02]": variant === "glow",
+          "hover:shadow-[0_0_30px_rgba(56,144,255,0.4)] hover:border-[#1E70D6]/50 hover:scale-[1.02]": variant === "glow",
           "bg-gradient-to-br from-white/20 via-white/10 to-white/5 border-white/30": variant === "hero",
           "backdrop-blur-[20px] bg-white/25 border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.3)]": variant === "frosted",
         },

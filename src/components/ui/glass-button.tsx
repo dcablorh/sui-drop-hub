@@ -8,14 +8,14 @@ const glassButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-br from-blue-500 to-blue-700 text-white border border-blue-400/50 backdrop-filter backdrop-blur-[10px] hover:from-blue-400 hover:to-blue-600 hover:border-blue-300/70 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.2)]",
-        primary: "bg-blue-500/20 text-white border border-blue-400/40 backdrop-filter backdrop-blur-[10px] hover:bg-blue-400/30 hover:border-blue-300/60 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:scale-105",
-        secondary: "bg-slate-500/20 text-slate-100 border border-slate-400/30 backdrop-filter backdrop-blur-[10px] hover:bg-slate-400/30 hover:border-slate-300/50 hover:shadow-[0_0_20px_rgba(148,163,184,0.3)] hover:scale-105",
+        default: "bg-[#3890FF]/30 text-white border border-[#1E70D6]/60 backdrop-filter backdrop-blur-[10px] hover:bg-[#3890FF]/40 hover:border-[#1E70D6]/80 hover:shadow-[0_0_25px_rgba(56,144,255,0.5)] hover:scale-105 shadow-[0_0_15px_rgba(56,144,255,0.3)]",
+        primary: "bg-[#3890FF]/20 text-white border border-[#1E70D6]/50 backdrop-filter backdrop-blur-[10px] hover:bg-[#3890FF]/30 hover:border-[#1E70D6]/70 hover:shadow-[0_0_25px_rgba(56,144,255,0.4)] hover:scale-105",
+        secondary: "bg-[#5727F5]/20 text-white border border-[#1E70D6]/40 backdrop-filter backdrop-blur-[10px] hover:bg-[#5727F5]/30 hover:border-[#1E70D6]/60 hover:shadow-[0_0_20px_rgba(87,39,245,0.3)] hover:scale-105",
         destructive: "bg-red-500/20 text-white border border-red-400/40 backdrop-filter backdrop-blur-[10px] hover:bg-red-400/30 hover:border-red-300/60 hover:shadow-[0_0_25px_rgba(239,68,68,0.4)] hover:scale-105",
-        outline: "border border-white/40 backdrop-filter backdrop-blur-[10px] hover:bg-white/10 hover:border-cyan-400/60 hover:shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:scale-105",
+        outline: "border border-[#1E70D6]/50 backdrop-filter backdrop-blur-[10px] hover:bg-[#3890FF]/10 hover:border-[#1E70D6]/70 hover:shadow-[0_0_20px_rgba(30,112,214,0.3)] hover:scale-105",
         ghost: "backdrop-filter backdrop-blur-[10px] hover:bg-white/10 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:scale-105",
         link: "text-cyan-300 underline-offset-4 hover:underline hover:text-cyan-200 hover:scale-105",
-        neon: "bg-cyan-500/10 text-cyan-100 border border-cyan-400/50 backdrop-filter backdrop-blur-[10px] hover:bg-cyan-400/20 hover:border-cyan-300/70 hover:shadow-[0_0_30px_rgba(34,211,238,0.6)] hover:scale-110 shadow-[0_0_15px_rgba(34,211,238,0.2)]",
+        neon: "bg-[#3890FF]/15 text-white border border-[#1E70D6]/60 backdrop-filter backdrop-blur-[10px] hover:bg-[#3890FF]/25 hover:border-[#1E70D6]/80 hover:shadow-[0_0_30px_rgba(56,144,255,0.6)] hover:scale-110 shadow-[0_0_15px_rgba(56,144,255,0.3)]",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -55,7 +55,7 @@ const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
         </span>
         
         {/* Animated border glow */}
-        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-cyan-400/20 via-blue-400/20 to-cyan-400/20 blur-sm -z-10" />
+        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-[#1E70D6]/30 via-[#3890FF]/30 to-[#1E70D6]/30 blur-sm -z-10" />
       </Comp>
     )
   }

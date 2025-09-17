@@ -82,17 +82,17 @@ All colors MUST be HSL.
     --ring: 221 83% 53%;
 
     /* Blue and White custom tokens */
-    --sui-blue: 221 83% 53%;
-    --sui-dark-blue: 220 91% 42%;
-    --sui-light-blue: 221 83% 85%;
+    --sui-blue: 220 100% 66%; /* #3890FF */
+    --sui-dark-blue: 220 84% 49%; /* #1E70D6 */
+    --sui-light-blue: 248 92% 57%; /* #5727F5 */
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--sui-blue)), hsl(var(--sui-dark-blue)));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(221 83% 98%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(var(--sui-light-blue) / 0.05));
     --gradient-hero: linear-gradient(135deg, hsl(var(--sui-blue) / 0.1), hsl(var(--sui-dark-blue) / 0.1));
     
     /* Shadows */
-    --shadow-glow: 0 0 50px hsl(var(--sui-blue) / 0.3);
+    --shadow-glow: 0 0 50px hsl(var(--sui-blue) / 0.4);
     --shadow-card: 0 8px 32px hsl(220 39% 11% / 0.1);
     
     /* Transitions */

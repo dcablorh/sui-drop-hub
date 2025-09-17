@@ -13,6 +13,7 @@ export function WalletConnection() {
         <>
           {/* Show connected wallet address */}
           <Badge variant="outline" className="flex items-center gap-1 bg-white/20 backdrop-blur-[10px] border-white/30 text-white">
+          <Badge variant="outline" className="flex items-center gap-1 bg-[#3890FF]/20 backdrop-blur-[10px] border-[#1E70D6]/40 text-white">
             <Wallet size={16} />
             {currentAccount.address.slice(0, 6)}...
             {currentAccount.address.slice(-4)}

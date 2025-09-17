@@ -87,10 +87,10 @@ export function LiquidBackground({ className = '' }: LiquidBackgroundProps) {
         float gradient = length(p) * 0.5 + combined * 0.3;
         
         // Chrome color palette
-        vec3 chrome1 = vec3(0.8, 0.9, 1.0);  // Light blue-white
-        vec3 chrome2 = vec3(0.4, 0.6, 0.9);  // Medium blue
-        vec3 chrome3 = vec3(0.1, 0.3, 0.7);  // Dark blue
-        vec3 chrome4 = vec3(0.0, 0.1, 0.3);  // Very dark blue
+        vec3 chrome1 = vec3(0.7, 0.8, 1.0);  // Light blue-white
+        vec3 chrome2 = vec3(0.22, 0.56, 1.0);  // #3890FF - Button blue
+        vec3 chrome3 = vec3(0.12, 0.44, 0.84);  // #1E70D6 - Border blue
+        vec3 chrome4 = vec3(0.34, 0.15, 0.96);  // #5727F5 - Background blue
         
         // Create smooth color transitions
         vec3 color = mix(chrome4, chrome3, smoothstep(0.0, 0.3, combined));
@@ -232,7 +232,7 @@ export function LiquidBackground({ className = '' }: LiquidBackgroundProps) {
         style={{ display: 'block' }}
       />
       {/* Fallback CSS animation for browsers without WebGL */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 animate-pulse opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#5727F5] via-[#3890FF] to-[#1E70D6] animate-pulse opacity-80" />
     </div>
   );
 }
