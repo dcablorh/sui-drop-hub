@@ -8,7 +8,7 @@ const glassButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-white/20 text-white border border-white/30 backdrop-filter backdrop-blur-[10px] hover:bg-white/30 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:scale-105",
+        default: "bg-gradient-to-br from-blue-500 to-blue-700 text-white border border-blue-400/50 backdrop-filter backdrop-blur-[10px] hover:from-blue-400 hover:to-blue-600 hover:border-blue-300/70 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.2)]",
         primary: "bg-blue-500/20 text-white border border-blue-400/40 backdrop-filter backdrop-blur-[10px] hover:bg-blue-400/30 hover:border-blue-300/60 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:scale-105",
         secondary: "bg-slate-500/20 text-slate-100 border border-slate-400/30 backdrop-filter backdrop-blur-[10px] hover:bg-slate-400/30 hover:border-slate-300/50 hover:shadow-[0_0_20px_rgba(148,163,184,0.3)] hover:scale-105",
         destructive: "bg-red-500/20 text-white border border-red-400/40 backdrop-filter backdrop-blur-[10px] hover:bg-red-400/30 hover:border-red-300/60 hover:shadow-[0_0_25px_rgba(239,68,68,0.4)] hover:scale-105",
