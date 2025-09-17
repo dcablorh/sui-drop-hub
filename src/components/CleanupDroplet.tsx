@@ -202,7 +202,62 @@ export const CleanupDroplet = () => {
     }
   };
 
-  
+  return (
+    <GradientCard className="w-full max-w-2xl mx-auto">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-xl sm:text-2xl flex items-center justify-center gap-2">
+          <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          Cleanup Expired Droplet
+        </CardTitle>
+        <CardDescription className="text-sm sm:text-base">
+          Clean up expired droplets and refund remaining tokens
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="cleanup-droplet-id" className="text-sm font-medium">
+              Droplet ID <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative">
+              <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="cleanup-droplet-id"
+                placeholder="Enter 6-character droplet ID"
+                value={dropletId}
+                onChange={(e) => {
+                  setDropletId(e.target.value.toUpperCase());
+                  setError('');
+                }}
+                className={`pl-10 text-center font-mono text-lg ${error ? 'border-destructive' : ''}`}
+                maxLength={6}
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-destructive mt-1">{error}</p>
+            )}
+          </div>
+
+          <Button
+            onClick={handleCleanup}
+            disabled={loading || !dropletId}
+            className="w-full h-12 text-base font-semibold"
+            size="lg"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Processing Cleanup...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                <span>Cleanup Droplet</span>
+              </div>
+            )}
+          </Button>
+        </div>
 
         <div className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
           <p className="font-medium mb-1">How it works:</p>
@@ -212,5 +267,7 @@ export const CleanupDroplet = () => {
             <li>Anyone can trigger cleanup for expired droplets</li>
           </ul>
         </div>
-    
-}
+      </CardContent>
+    </GradientCard>
+  );
+};

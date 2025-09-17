@@ -99,7 +99,7 @@ export function UserDashboard() {
         closedEventsRef.current = closedRes.data || [];
 
         eventCache.lastFetchTime = now;
-        eventCache.cursor = createdRes.hasNextPage ? createdRes.nextCursor : null;
+        eventCache.cursor = createdRes.hasNextPage ? (createdRes.nextCursor?.txDigest || null) : null;
       }
 
       // Build droplet ID sets from events (fast in-memory work)

@@ -1,5 +1,5 @@
 import { ConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
-import { Button } from '@/components/ui/button';
+import { GlassButton } from '@/components/ui/glass-button';
 import { Badge } from '@/components/ui/badge';
 import { Wallet, LogOut } from 'lucide-react';
 
@@ -12,14 +12,14 @@ export function WalletConnection() {
       {currentAccount ? (
         <>
           {/* Show connected wallet address */}
-          <Badge variant="outline" className="flex items-center gap-1">
+          <Badge variant="outline" className="flex items-center gap-1 bg-white/20 backdrop-blur-[10px] border-white/30 text-white">
             <Wallet size={16} />
             {currentAccount.address.slice(0, 6)}...
             {currentAccount.address.slice(-4)}
           </Badge>
 
           {/* Disconnect button */}
-          <Button
+          <GlassButton
             variant="destructive"
             size="sm"
             onClick={() => disconnect()}
@@ -27,7 +27,7 @@ export function WalletConnection() {
           >
             <LogOut size={16} />
             Disconnect
-          </Button>
+          </GlassButton>
         </>
       ) : (
         // Sui Wallet Connect Button — Works on desktop & mobile
