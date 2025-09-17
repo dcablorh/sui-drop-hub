@@ -61,25 +61,25 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Light mode - Blue and White theme */
-    --background: 0 0% 100%;
-    --foreground: 220 39% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 39% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 39% 11%;
-    --primary: 221 83% 53%;
+    --background: 251 91% 55%;  /* #5727F5 */
+    --foreground: 0 0% 100%;
+    --card: 251 91% 55%;
+    --card-foreground: 0 0% 100%;
+    --popover: 251 91% 55%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 217 100% 61%;    /* #3890FF */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 14% 96%;
-    --secondary-foreground: 220 39% 11%;
+    --secondary-foreground: 0 0% 100%;
     --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 0 0% 100%;
     --accent: 220 14% 96%;
-    --accent-foreground: 220 39% 11%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
+    --border: 214 73% 47%;      /* #1E70D6 */
+    --input: 214 73% 47%;       /* #1E70D6 */
+    --ring: 214 73% 47%;
 
     /* Blue and White custom tokens */
     --sui-blue: 221 83% 53%;
@@ -102,15 +102,15 @@ All colors MUST be HSL.
 
     --sidebar-background: 0 0% 98%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 0 0% 100%;
 
     --sidebar-primary: 240 5.9% 10%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
     --sidebar-accent: 240 4.8% 95.9%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
 
     --sidebar-border: 220 13% 91%;
 
@@ -119,25 +119,25 @@ All colors MUST be HSL.
 
   .dark {
     /* Dark mode - Dark Blue and White theme */
-    --background: 220 39% 11%;
-    --foreground: 0 0% 100%;
-    --card: 220 39% 11%;
+    --background: 251 81% 45%;  /* Darker #5727F5 */
+    --foreground: 0 0% 80%;
+    --card: 251 91% 45%;
     --card-foreground: 0 0% 100%;
-    --popover: 220 39% 11%;
+    --popover: 251 91% 45%;
     --popover-foreground: 0 0% 100%;
-    --primary: 221 83% 53%;
+    --primary: 217 100% 61%;    /* #3890FF */
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 32% 18%;
+    --secondary: 251 91% 35%;   /* Even darker background */
     --secondary-foreground: 0 0% 100%;  
-    --muted: 220 32% 18%;
+    --muted: 251 91% 35%;
     --muted-foreground: 220 14% 71%;
-    --accent: 220 32% 18%;
+    --accent: 251 91% 35%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 32% 18%;
-    --input: 220 32% 18%;
-    --ring: 221 83% 53%;
+    --border: 214 73% 47%;      /* #1E70D6 */
+    --input: 214 73% 47%;       /* #1E70D6 */
+    --ring: 214 73% 47%;
 
     --card: 240 4% 9%;
     --card-foreground: 0 0% 98%;
