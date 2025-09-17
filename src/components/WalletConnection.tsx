@@ -35,5 +35,8 @@ export function WalletConnection() {
         <ConnectButton connectText="Connect Wallet" />
       )}
     </div>
-  );
+      );
+    }
+
+  )
 }
