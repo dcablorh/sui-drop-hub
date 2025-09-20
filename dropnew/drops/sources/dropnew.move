@@ -207,7 +207,7 @@ module dropnew::dropnew ;
     // Get token type as string for tracking
     #[allow(unused_type_parameter)]
     fun get_token_type<CoinType>(): String {
-        // Placeholder - in practice, this would extract the actual type name
+        
         string::utf8(b"COIN_TYPE")
     }
 
@@ -226,7 +226,7 @@ module dropnew::dropnew ;
         user: address,
         droplet_id: String,
         is_created: bool,
-        _ctx: &TxContext // Prefixed with underscore to silence warning
+        _ctx: &TxContext 
     ) {
         if (is_created) {
             if (!table::contains(&registry.user_created_droplets, user)) {
@@ -243,7 +243,7 @@ module dropnew::dropnew ;
         };
     }
 
-    // ===== Public Functions =====
+
 
     // Create a new droplet with optional expiry duration
     public entry fun create_droplet<CoinType>(
@@ -365,15 +365,7 @@ module dropnew::dropnew ;
         // Find droplet address by ID
         assert!(table::contains(&registry.droplets, droplet_id), E_DROPLET_NOT_FOUND);
         
-        // Note: Due to Sui Move limitations, we cannot directly retrieve and mutate
-        // a shared object by its address from within a contract function.
-        // 
-        // The frontend must:
-        // 1. Call find_droplet_by_id() to get the droplet address
-        // 2. Use that address to get the droplet object reference
-        // 3. Call claim_internal() with both the droplet_id and droplet object
-        //
-        // This function serves as validation and documentation of the intended interface.
+        
         
         abort E_DROPLET_NOT_FOUND // Placeholder - actual implementation needs droplet object
     }
@@ -397,12 +389,12 @@ module dropnew::dropnew ;
         // Verify droplet ID matches the droplet object
         assert!(droplet.droplet_id == droplet_id, E_INVALID_DROPLET_ID);
 
-        // Droplet state validations
+        
         assert!(!droplet.is_closed, E_DROPLET_CLOSED);
         assert!(!table::contains(&droplet.claimed, claimer), E_ALREADY_CLAIMED);
         assert!(droplet.num_claimed < droplet.receiver_limit, E_RECEIVER_LIMIT_REACHED);
 
-        // Check if expired
+        
         if (current_time >= droplet.expiry_time) {
             cleanup_expired_droplet(droplet, clock, ctx);
             abort E_DROPLET_EXPIRED
@@ -583,7 +575,7 @@ module dropnew::dropnew ;
         (created, claimed)
     }
 
-    // ===== Enhanced User History Functions =====
+    
 
     // Get user's created droplets only
     public fun get_user_created_droplets(registry: &DropletRegistry, user: address): vector<String> {
@@ -639,7 +631,7 @@ module dropnew::dropnew ;
         table::contains(&registry.user_claimed_droplets, user)
     }
 
-    // Get paginated user created droplets (for large histories)
+   
     public fun get_user_created_droplets_paginated(
         registry: &DropletRegistry, 
         user: address, 
@@ -699,7 +691,7 @@ module dropnew::dropnew ;
         result
     }
 
-    // ===== Other View Functions (continued) =====
+    
 
     // Get droplet claimers list
     public fun get_claimers<CoinType>(droplet: &Droplet<CoinType>): (vector<address>, vector<String>) {
